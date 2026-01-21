@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Modern MLOps Solution — Interactive Infographic</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
     :root{
@@ -251,6 +254,104 @@
     .d3-sublabel .material-icons {
       font-size: 9px;
     }
+    /* 3D View Styles */
+    #view3d {
+      position: relative;
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0b0f19 100%);
+      border-radius: 12px;
+    }
+    #view3d canvas {
+      border-radius: 12px;
+    }
+    .three-tooltip {
+      position: absolute;
+      padding: 8px 12px;
+      background: rgba(15, 22, 41, 0.95);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: #e9eefc;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 100;
+      max-width: 200px;
+    }
+    .three-tooltip.visible {
+      opacity: 1;
+    }
+    .three-tooltip .tt-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .three-tooltip .tt-desc {
+      color: #a9b4d6;
+      font-size: 11px;
+    }
+    .three-controls {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+    .three-controls button {
+      padding: 6px 10px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .three-hint {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      z-index: 10;
+    }
+    .label-3d {
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .label-3d.role-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-left: 3px solid currentColor;
+      padding-left: 6px;
+    }
+    .label-3d.stage-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      background: rgba(0,0,0,0.7);
+    }
+    .label-3d.node-label {
+      font-size: 8px;
+      font-weight: 500;
+      background: rgba(10, 10, 20, 0.75);
+      padding: 3px 6px;
+      text-align: center;
+      max-width: 90px;
+      line-height: 1.2;
+      border-radius: 3px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
     .foot{
       margin-top:14px;
       color:var(--muted);
@@ -284,6 +385,45 @@
       line-height:1.5;
     }
     .callout b{color:var(--text)}
+
+    /* 3D Galaxy Legend */
+    .legend-3d {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(10, 10, 30, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(100, 150, 255, 0.2);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-family: var(--sans);
+      z-index: 10;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .legend-3d .legend-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .legend-3d .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.8);
+      padding: 4px 0;
+    }
+    .legend-3d .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
   </style>
 </head>
 <body>
@@ -314,8 +454,9 @@
         </div>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
           <select id="layerSelect" style="padding:8px 12px; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.25); color:var(--text); font-size:12px; cursor:pointer;">
-            <optgroup label="Conceptual">
+            <optgroup label="Views">
               <option value="generic">Overview</option>
+              <option value="3d">3D Multi-Layer View</option>
               <option value="roles">Roles & Ownership</option>
             </optgroup>
             <optgroup label="Role Perspectives">
@@ -336,6 +477,7 @@
       </div>
       <div class="diagramWrap">
         <svg id="d3-arch" role="img" aria-label="MLOps reference architecture diagram"></svg>
+        <div id="view3d" style="display:none; width:100%; height:420px; perspective:1200px; overflow:hidden;"></div>
 
         <div id="layerLegend" class="foot" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
           <span class="pill"><span class="dot" style="background:#5eead4"></span> Data</span>
@@ -1013,23 +1155,34 @@
 
     function switchLayer(layerKey) {
       const layer = LAYERS[layerKey];
-      if (!layer) return;
 
-      // Update node labels
-      graphNodes.forEach(n => {
-        const layerData = layer.nodes[n.id];
-        n.label = layerData.label;
-        n.sub1 = layerData.sub1;
-        n.sub2 = layerData.sub2;
-      });
+      // Update node labels (skip for 3D view)
+      if (layer) {
+        graphNodes.forEach(n => {
+          const layerData = layer.nodes[n.id];
+          n.label = layerData.label;
+          n.sub1 = layerData.sub1;
+          n.sub2 = layerData.sub2;
+        });
 
-      // Update text elements
-      labelTexts.text(d => d.label);
-      sub1Texts.text(d => d.sub1);
-      sub2Texts.text(d => d.sub2);
+        // Update text elements
+        labelTexts.text(d => d.label);
+        sub1Texts.text(d => d.sub1);
+        sub2Texts.text(d => d.sub2);
+      }
 
       // Update legend based on layer type
       const legendConfig = {
+        "3d": {
+          pills: [
+            { color: "#f472b6", icon: "business", label: "Business" },
+            { color: "#a78bfa", icon: "science", label: "Data Scientist" },
+            { color: "#60a5fa", icon: "engineering", label: "ML Engineer" },
+            { color: "#5eead4", icon: "storage", label: "Data Engineer" },
+            { color: "#fbbf24", icon: "cloud", label: "DevOps" }
+          ],
+          tip: "<b>3D view</b> shows how different roles collaborate across the MLOps pipeline."
+        },
         generic: {
           pills: [
             { color: "#5eead4", label: "Data" },
@@ -1150,8 +1303,555 @@
       `;
     }
 
+    // Three.js Isometric 3D View Setup
+    const view3d = document.getElementById("view3d");
+    const svgContainer = document.getElementById("d3-arch");
+
+    const ROLES_3D = [
+      { key: "business", name: "Business", color: 0xf472b6, colorHex: "#f472b6" },
+      { key: "data_scientist", name: "Data Scientist", color: 0xa78bfa, colorHex: "#a78bfa" },
+      { key: "ml_engineer", name: "ML Engineer", color: 0x60a5fa, colorHex: "#60a5fa" },
+      { key: "data_engineer", name: "Data Engineer", color: 0x5eead4, colorHex: "#5eead4" },
+      { key: "devops", name: "DevOps", color: 0xfbbf24, colorHex: "#fbbf24" }
+    ];
+
+    const STAGES_3D = [
+      { key: "sources", name: "Data Sources", color: 0x5eead4 },
+      { key: "lakehouse", name: "Lakehouse", color: 0x5eead4 },
+      { key: "features", name: "Features", color: 0x60a5fa },
+      { key: "training", name: "Training", color: 0xa78bfa },
+      { key: "registry", name: "Tracking", color: 0xf472b6 },
+      { key: "modelreg", name: "Registry", color: 0xf472b6 },
+      { key: "deploy", name: "Serving", color: 0xfbbf24 },
+      { key: "monitor", name: "Monitor", color: 0x34d399 }
+    ];
+
+    let threeScene, threeCamera, threeRenderer, threeControls, cssRenderer;
+    let nodeMeshes = [];
+    let animationId = null;
+    let tooltip3d = null;
+    let raycaster, mouse;
+    let particles = [];
+    let glowMeshes = [];
+    let time3d = 0;
+
+    function create3DView() {
+      view3d.innerHTML = "";
+      nodeMeshes = [];
+      particles = [];
+      glowMeshes = [];
+      time3d = 0;
+
+      const width = view3d.clientWidth || 800;
+      const height = 500;
+
+      // Scene with fog for depth
+      threeScene = new THREE.Scene();
+      threeScene.fog = new THREE.FogExp2(0x0a0a1a, 0.015);
+
+      // Perspective camera for dramatic effect
+      threeCamera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+      threeCamera.position.set(0, 25, 35);
+      threeCamera.lookAt(0, 0, 0);
+
+      // WebGL Renderer with better quality
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      threeRenderer.setSize(width, height);
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      threeRenderer.setClearColor(0x0a0a1a, 1);
+      threeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+      threeRenderer.toneMappingExposure = 1.2;
+      view3d.appendChild(threeRenderer.domElement);
+
+      // CSS2D Renderer for labels
+      cssRenderer = new THREE.CSS2DRenderer();
+      cssRenderer.setSize(width, height);
+      cssRenderer.domElement.style.position = 'absolute';
+      cssRenderer.domElement.style.top = '0';
+      cssRenderer.domElement.style.left = '0';
+      cssRenderer.domElement.style.pointerEvents = 'none';
+      view3d.appendChild(cssRenderer.domElement);
+
+      // Orbit Controls
+      threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
+      threeControls.enableDamping = true;
+      threeControls.dampingFactor = 0.05;
+      threeControls.minDistance = 15;
+      threeControls.maxDistance = 80;
+      threeControls.enableRotate = true;
+      threeControls.autoRotate = true;
+      threeControls.autoRotateSpeed = 0.5;
+      threeControls.maxPolarAngle = Math.PI / 2 + 0.3;
+
+      // Ambient light
+      const ambientLight = new THREE.AmbientLight(0x404060, 0.4);
+      threeScene.add(ambientLight);
+
+      // Main light
+      const mainLight = new THREE.DirectionalLight(0xffffff, 0.6);
+      mainLight.position.set(10, 30, 20);
+      threeScene.add(mainLight);
+
+      // Colored accent lights
+      const blueLight = new THREE.PointLight(0x60a5fa, 1, 50);
+      blueLight.position.set(-15, 10, -10);
+      threeScene.add(blueLight);
+
+      const purpleLight = new THREE.PointLight(0xa78bfa, 1, 50);
+      purpleLight.position.set(15, 10, 10);
+      threeScene.add(purpleLight);
+
+      const tealLight = new THREE.PointLight(0x5eead4, 0.8, 50);
+      tealLight.position.set(0, 15, -15);
+      threeScene.add(tealLight);
+
+      // Create starfield background
+      const starGeometry = new THREE.BufferGeometry();
+      const starCount = 1500;
+      const starPositions = new Float32Array(starCount * 3);
+      const starColors = new Float32Array(starCount * 3);
+
+      for (let i = 0; i < starCount; i++) {
+        const radius = 80 + Math.random() * 120;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+
+        starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+        starPositions[i * 3 + 1] = radius * Math.cos(phi);
+        starPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+
+        const color = new THREE.Color();
+        color.setHSL(0.6 + Math.random() * 0.2, 0.3, 0.6 + Math.random() * 0.4);
+        starColors[i * 3] = color.r;
+        starColors[i * 3 + 1] = color.g;
+        starColors[i * 3 + 2] = color.b;
+      }
+
+      starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+      starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+      const starMaterial = new THREE.PointsMaterial({
+        size: 0.5,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+        sizeAttenuation: true
+      });
+
+      const stars = new THREE.Points(starGeometry, starMaterial);
+      threeScene.add(stars);
+
+      // Pipeline path - curved arc layout
+      const stagePositions = [];
+      const stageSpacing = 5.5;
+      const curveRadius = 18;
+      const startAngle = Math.PI * 0.85;
+      const endAngle = Math.PI * 0.15;
+      const angleStep = (startAngle - endAngle) / (STAGES_3D.length - 1);
+
+      STAGES_3D.forEach((stage, i) => {
+        const angle = startAngle - i * angleStep;
+        const x = Math.cos(angle) * curveRadius;
+        const z = Math.sin(angle) * curveRadius - 5;
+        const y = Math.sin(i * 0.3) * 1.5; // Slight wave
+        stagePositions.push({ x, y, z, angle });
+      });
+
+      // Create glowing pipeline tube
+      const pipelineCurve = new THREE.CatmullRomCurve3(
+        stagePositions.map(p => new THREE.Vector3(p.x, p.y, p.z))
+      );
+
+      const tubeGeom = new THREE.TubeGeometry(pipelineCurve, 100, 0.15, 8, false);
+      const tubeMat = new THREE.MeshPhongMaterial({
+        color: 0x60a5fa,
+        transparent: true,
+        opacity: 0.3,
+        emissive: 0x60a5fa,
+        emissiveIntensity: 0.5
+      });
+      const tube = new THREE.Mesh(tubeGeom, tubeMat);
+      threeScene.add(tube);
+
+      // Outer glow tube
+      const glowTubeGeom = new THREE.TubeGeometry(pipelineCurve, 100, 0.4, 8, false);
+      const glowTubeMat = new THREE.MeshBasicMaterial({
+        color: 0x60a5fa,
+        transparent: true,
+        opacity: 0.1,
+        side: THREE.BackSide
+      });
+      const glowTube = new THREE.Mesh(glowTubeGeom, glowTubeMat);
+      threeScene.add(glowTube);
+
+      // Create flowing particles along pipeline
+      const particleCount = 80;
+      for (let i = 0; i < particleCount; i++) {
+        const particleGeom = new THREE.SphereGeometry(0.08, 8, 8);
+        const particleMat = new THREE.MeshBasicMaterial({
+          color: 0x60a5fa,
+          transparent: true,
+          opacity: 0.8
+        });
+        const particle = new THREE.Mesh(particleGeom, particleMat);
+        particle.userData.offset = Math.random();
+        particle.userData.speed = 0.1 + Math.random() * 0.15;
+        particles.push({ mesh: particle, curve: pipelineCurve });
+        threeScene.add(particle);
+      }
+
+      // Create stage nodes (main pipeline)
+      STAGES_3D.forEach((stage, i) => {
+        const pos = stagePositions[i];
+
+        // Main node - glowing crystal/gem
+        const nodeGeom = new THREE.IcosahedronGeometry(1.2, 1);
+        const nodeMat = new THREE.MeshPhongMaterial({
+          color: stage.color,
+          transparent: true,
+          opacity: 0.85,
+          shininess: 100,
+          emissive: stage.color,
+          emissiveIntensity: 0.3
+        });
+        const node = new THREE.Mesh(nodeGeom, nodeMat);
+        node.position.set(pos.x, pos.y + 1.5, pos.z);
+        node.userData = {
+          stageKey: stage.key,
+          stageName: stage.name,
+          isStageNode: true,
+          baseY: pos.y + 1.5,
+          phaseOffset: i * 0.5
+        };
+        threeScene.add(node);
+        nodeMeshes.push(node);
+        glowMeshes.push(node);
+
+        // Outer glow sphere
+        const glowGeom = new THREE.SphereGeometry(1.8, 16, 16);
+        const glowMat = new THREE.MeshBasicMaterial({
+          color: stage.color,
+          transparent: true,
+          opacity: 0.15,
+          side: THREE.BackSide
+        });
+        const glow = new THREE.Mesh(glowGeom, glowMat);
+        glow.position.copy(node.position);
+        threeScene.add(glow);
+        glow.userData.parentNode = node;
+        glowMeshes.push(glow);
+
+        // Orbiting ring
+        const ringGeom = new THREE.TorusGeometry(2, 0.05, 8, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: stage.color,
+          transparent: true,
+          opacity: 0.5
+        });
+        const ring = new THREE.Mesh(ringGeom, ringMat);
+        ring.position.copy(node.position);
+        ring.rotation.x = Math.PI / 2;
+        ring.userData.rotSpeed = 0.5 + Math.random() * 0.5;
+        ring.userData.parentNode = node;
+        threeScene.add(ring);
+        glowMeshes.push(ring);
+
+        // Stage label
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'label-3d stage-label';
+        labelDiv.textContent = stage.name;
+        labelDiv.style.color = '#' + stage.color.toString(16).padStart(6, '0');
+        const label = new THREE.CSS2DObject(labelDiv);
+        label.position.set(pos.x, pos.y + 4, pos.z);
+        threeScene.add(label);
+
+        // Role orbs orbiting each stage
+        ROLES_3D.forEach((role, j) => {
+          const layerData = LAYERS[role.key];
+          const stageData = layerData.nodes[stage.key];
+
+          const orbitRadius = 3.5;
+          const orbitAngle = (j / ROLES_3D.length) * Math.PI * 2;
+          const orbitY = (j - 2) * 0.8;
+
+          // Role orb
+          const orbGeom = new THREE.SphereGeometry(0.45, 16, 16);
+          const orbMat = new THREE.MeshPhongMaterial({
+            color: role.color,
+            transparent: true,
+            opacity: 0.9,
+            shininess: 80,
+            emissive: role.color,
+            emissiveIntensity: 0.25
+          });
+          const orb = new THREE.Mesh(orbGeom, orbMat);
+
+          // Store orbit data
+          orb.userData = {
+            centerX: pos.x,
+            centerY: pos.y + 1.5,
+            centerZ: pos.z,
+            orbitRadius: orbitRadius,
+            orbitAngle: orbitAngle,
+            orbitY: orbitY,
+            orbitSpeed: 0.3 + j * 0.1,
+            roleKey: role.key,
+            roleName: role.name,
+            stageKey: stage.key,
+            stageName: stage.name,
+            sub1: stageData.sub1,
+            sub2: stageData.sub2,
+            isNode: true
+          };
+
+          // Initial position
+          orb.position.set(
+            pos.x + Math.cos(orbitAngle) * orbitRadius,
+            pos.y + 1.5 + orbitY,
+            pos.z + Math.sin(orbitAngle) * orbitRadius
+          );
+
+          threeScene.add(orb);
+          nodeMeshes.push(orb);
+
+          // Small glow for each orb
+          const orbGlowGeom = new THREE.SphereGeometry(0.65, 8, 8);
+          const orbGlowMat = new THREE.MeshBasicMaterial({
+            color: role.color,
+            transparent: true,
+            opacity: 0.2,
+            side: THREE.BackSide
+          });
+          const orbGlow = new THREE.Mesh(orbGlowGeom, orbGlowMat);
+          orbGlow.userData.parentOrb = orb;
+          threeScene.add(orbGlow);
+          glowMeshes.push(orbGlow);
+        });
+      });
+
+      // Color code legend (floating)
+      const legendDiv = document.createElement('div');
+      legendDiv.className = 'legend-3d';
+      legendDiv.innerHTML = `
+        <div class="legend-title">Roles (Orbiting Spheres)</div>
+        ${ROLES_3D.map(r => `
+          <div class="legend-item">
+            <span class="legend-dot" style="background:${r.colorHex}"></span>
+            ${r.name}
+          </div>
+        `).join('')}
+        <div class="legend-title" style="margin-top:12px;">Pipeline Stages (Crystals)</div>
+        ${STAGES_3D.map(s => `
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#${s.color.toString(16).padStart(6, '0')}"></span>
+            ${s.name}
+          </div>
+        `).join('')}
+      `;
+      view3d.appendChild(legendDiv);
+
+      // Tooltip
+      tooltip3d = document.createElement('div');
+      tooltip3d.className = 'three-tooltip';
+      view3d.appendChild(tooltip3d);
+
+      // Raycaster
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      // Controls UI
+      const controlsDiv = document.createElement('div');
+      controlsDiv.className = 'three-controls';
+      controlsDiv.innerHTML = `
+        <button id="btn3dReset"><span class="material-icons" style="font-size:14px;">restart_alt</span> Reset</button>
+        <button id="btn3dRotate"><span class="material-icons" style="font-size:14px;">360</span> Pause</button>
+        <button id="btn3dTop"><span class="material-icons" style="font-size:14px;">visibility</span> Top</button>
+      `;
+      view3d.appendChild(controlsDiv);
+
+      document.getElementById('btn3dReset').addEventListener('click', () => {
+        threeCamera.position.set(0, 25, 35);
+        threeCamera.lookAt(0, 0, 0);
+        threeControls.reset();
+        threeControls.autoRotate = true;
+      });
+
+      document.getElementById('btn3dRotate').addEventListener('click', (e) => {
+        threeControls.autoRotate = !threeControls.autoRotate;
+        e.target.innerHTML = threeControls.autoRotate
+          ? '<span class="material-icons" style="font-size:14px;">360</span> Pause'
+          : '<span class="material-icons" style="font-size:14px;">360</span> Rotate';
+      });
+
+      document.getElementById('btn3dTop').addEventListener('click', () => {
+        threeCamera.position.set(0, 50, 1);
+        threeCamera.lookAt(0, 0, 0);
+      });
+
+      // Hint
+      const hint = document.createElement('div');
+      hint.className = 'three-hint';
+      hint.innerHTML = `<span class="material-icons" style="font-size:14px;">mouse</span> Drag to orbit • Scroll to zoom • Click node to explore`;
+      view3d.appendChild(hint);
+
+      // Mouse events
+      threeRenderer.domElement.addEventListener('mousemove', onMouseMove3D);
+      threeRenderer.domElement.addEventListener('click', onClick3D);
+
+      // Start animation
+      animate3D();
+    }
+
+    function onMouseMove3D(event) {
+      const rect = threeRenderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, threeCamera);
+      const intersects = raycaster.intersectObjects(nodeMeshes);
+
+      // Reset hover states
+      nodeMeshes.forEach(mesh => {
+        if (mesh.userData.isNode || mesh.userData.isStageNode) {
+          mesh.material.emissiveIntensity = mesh.userData.isStageNode ? 0.3 : 0.25;
+        }
+      });
+
+      if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        if (obj.userData.isNode) {
+          obj.material.emissiveIntensity = 0.7;
+
+          const data = obj.userData;
+          tooltip3d.innerHTML = `
+            <div class="tt-title">${data.roleName} → ${data.stageName}</div>
+            <div class="tt-desc">${data.sub1}<br>${data.sub2}</div>
+          `;
+          tooltip3d.style.left = (event.clientX - view3d.getBoundingClientRect().left + 15) + 'px';
+          tooltip3d.style.top = (event.clientY - view3d.getBoundingClientRect().top - 10) + 'px';
+          tooltip3d.classList.add('visible');
+          threeRenderer.domElement.style.cursor = 'pointer';
+          return;
+        } else if (obj.userData.isStageNode) {
+          obj.material.emissiveIntensity = 0.6;
+          tooltip3d.innerHTML = `
+            <div class="tt-title">${obj.userData.stageName}</div>
+            <div class="tt-desc">Click to see all roles</div>
+          `;
+          tooltip3d.style.left = (event.clientX - view3d.getBoundingClientRect().left + 15) + 'px';
+          tooltip3d.style.top = (event.clientY - view3d.getBoundingClientRect().top - 10) + 'px';
+          tooltip3d.classList.add('visible');
+          threeRenderer.domElement.style.cursor = 'pointer';
+          return;
+        }
+      }
+
+      tooltip3d.classList.remove('visible');
+      threeRenderer.domElement.style.cursor = 'grab';
+    }
+
+    function onClick3D(event) {
+      raycaster.setFromCamera(mouse, threeCamera);
+      const intersects = raycaster.intersectObjects(nodeMeshes);
+
+      if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        if (obj.userData.isNode) {
+          const key = obj.userData.roleKey;
+          layerSelect.value = key;
+          show2DView();
+          switchLayer(key);
+        }
+      }
+    }
+
+    function animate3D() {
+      animationId = requestAnimationFrame(animate3D);
+      time3d += 0.016;
+
+      // Animate particles flowing along pipeline
+      particles.forEach(p => {
+        p.mesh.userData.offset += p.mesh.userData.speed * 0.01;
+        if (p.mesh.userData.offset > 1) p.mesh.userData.offset = 0;
+
+        const point = p.curve.getPoint(p.mesh.userData.offset);
+        p.mesh.position.copy(point);
+
+        // Pulse opacity
+        p.mesh.material.opacity = 0.5 + Math.sin(time3d * 3 + p.mesh.userData.offset * 10) * 0.3;
+      });
+
+      // Animate orbiting role orbs and glows
+      nodeMeshes.forEach(mesh => {
+        if (mesh.userData.isNode && mesh.userData.orbitRadius) {
+          const data = mesh.userData;
+          const newAngle = data.orbitAngle + time3d * data.orbitSpeed;
+
+          mesh.position.x = data.centerX + Math.cos(newAngle) * data.orbitRadius;
+          mesh.position.z = data.centerZ + Math.sin(newAngle) * data.orbitRadius;
+          mesh.position.y = data.centerY + data.orbitY + Math.sin(time3d * 2 + data.orbitAngle) * 0.2;
+        }
+
+        // Pulse stage nodes
+        if (mesh.userData.isStageNode) {
+          const pulse = 1 + Math.sin(time3d * 2 + mesh.userData.phaseOffset) * 0.05;
+          mesh.scale.set(pulse, pulse, pulse);
+          mesh.position.y = mesh.userData.baseY + Math.sin(time3d * 1.5 + mesh.userData.phaseOffset) * 0.15;
+        }
+      });
+
+      // Update glow positions and rings
+      glowMeshes.forEach(mesh => {
+        if (mesh.userData.parentNode) {
+          mesh.position.copy(mesh.userData.parentNode.position);
+          if (mesh.userData.rotSpeed) {
+            mesh.rotation.z += mesh.userData.rotSpeed * 0.01;
+          }
+        }
+        if (mesh.userData.parentOrb) {
+          mesh.position.copy(mesh.userData.parentOrb.position);
+        }
+      });
+
+      threeControls.update();
+      threeRenderer.render(threeScene, threeCamera);
+      cssRenderer.render(threeScene, threeCamera);
+    }
+
+    function destroy3DView() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      if (threeRenderer) {
+        threeRenderer.dispose();
+      }
+      if (threeControls) {
+        threeControls.dispose();
+      }
+      view3d.innerHTML = "";
+    }
+
+    function show3DView() {
+      svgContainer.style.display = "none";
+      view3d.style.display = "block";
+      create3DView();
+    }
+
+    function show2DView() {
+      destroy3DView();
+      view3d.style.display = "none";
+      svgContainer.style.display = "block";
+    }
+
     layerSelect.addEventListener("change", (e) => {
-      switchLayer(e.target.value);
+      const value = e.target.value;
+      if (value === "3d") {
+        show3DView();
+      } else {
+        show2DView();
+      }
+      switchLayer(value);
     });
 
     // ------------------------------------
