@@ -1,0 +1,2191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The Ultimate MLOps Guide — Definitions, Architecture, Adoption & ML Test Score</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<style>
+:root{
+  /* LIGHT THEME (default) */
+  --bg:#f6f8fc;
+  --bg2:#eef2f9;
+  --panel:#ffffff;
+  --panel2:#fbfcff;
+  --text:#0f172a;
+  --muted:#475569;
+  --line:#e2e8f0;
+  --line2:#eef2f7;
+  --teal:#0d9488;
+  --blue:#2563eb;
+  --purple:#7c3aed;
+  --pink:#db2777;
+  --yellow:#b45309;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --green:#059669;
+  --shadow:0 10px 30px rgba(15,23,42,.08);
+  --radius:16px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+
+  /* surfaces & accents */
+  --surface: #ffffff;
+  --surface-2:#f8fafc;
+  --surface-tint: rgba(15,23,42,.03);
+  --hero-grad-1: rgba(13,148,136,.10);
+  --hero-grad-2: rgba(37,99,235,.10);
+  --hero-grad-3: rgba(124,58,237,.10);
+
+  /* SVG-specific */
+  --svg-text:#0f172a;
+  --svg-muted:#64748b;
+  --svg-grid: rgba(15,23,42,.08);
+  --svg-grid-strong: rgba(15,23,42,.18);
+  --node-bg:#ffffff;
+  --node-stroke: rgba(15,23,42,.22);
+  --tip-bg:#ffffff;
+  --tip-border: rgba(15,23,42,.15);
+  --tip-text:#0f172a;
+  --page-bg-stroke:#ffffff; /* used for heatmap cell stroke and similar */
+}
+:root.dark{
+  --bg:#0a0d18;
+  --bg2:#0d1224;
+  --panel:#0f1629;
+  --panel2:#0c1324;
+  --text:#eaf0ff;
+  --muted:#9fa9cc;
+  --line:rgba(255,255,255,.10);
+  --line2:rgba(255,255,255,.06);
+  --teal:#5eead4;
+  --blue:#60a5fa;
+  --purple:#a78bfa;
+  --pink:#f472b6;
+  --yellow:#fbbf24;
+  --orange:#fb923c;
+  --red:#fb7185;
+  --green:#34d399;
+  --shadow:0 24px 60px rgba(0,0,0,.5);
+
+  --surface: linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012));
+  --surface-2: rgba(255,255,255,.02);
+  --surface-tint: rgba(255,255,255,.03);
+  --hero-grad-1: rgba(94,234,212,.18);
+  --hero-grad-2: rgba(96,165,250,.18);
+  --hero-grad-3: rgba(167,139,250,.18);
+
+  --svg-text:#eaf0ff;
+  --svg-muted:#9fa9cc;
+  --svg-grid: rgba(255,255,255,.07);
+  --svg-grid-strong: rgba(255,255,255,.18);
+  --node-bg:#0f1629;
+  --node-stroke: rgba(255,255,255,.18);
+  --tip-bg: rgba(10,13,24,.96);
+  --tip-border: rgba(255,255,255,.10);
+  --tip-text:#eaf0ff;
+  --page-bg-stroke:#06080f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans);
+  color:var(--text);
+  background:
+    radial-gradient(1200px 700px at 10% 0%, var(--hero-grad-1), transparent 55%),
+    radial-gradient(900px 600px at 90% 5%, var(--hero-grad-2), transparent 55%),
+    radial-gradient(800px 600px at 50% 100%, var(--hero-grad-3), transparent 55%),
+    linear-gradient(180deg, var(--bg2), var(--bg));
+  min-height:100vh;
+  line-height:1.55;
+}
+:root.dark body{
+  background:
+    radial-gradient(1200px 700px at 10% 0%, rgba(94,234,212,.10), transparent 55%),
+    radial-gradient(900px 600px at 90% 5%, rgba(96,165,250,.10), transparent 55%),
+    radial-gradient(800px 600px at 50% 100%, rgba(167,139,250,.10), transparent 55%),
+    linear-gradient(180deg,#06080f,var(--bg));
+}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ===== Layout ===== */
+.shell{display:grid;grid-template-columns:260px 1fr;gap:0;min-height:100vh}
+@media(max-width:980px){.shell{grid-template-columns:1fr}}
+
+/* Sidebar */
+aside.nav{
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+  border-right:1px solid var(--line);
+  background: var(--panel2);
+  padding:22px 16px;
+}
+:root.dark aside.nav{ background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01)); }
+@media(max-width:980px){aside.nav{position:static;height:auto}}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.brand .dot{width:34px;height:34px;border-radius:10px;background:conic-gradient(from 210deg,var(--teal),var(--blue),var(--purple),var(--pink),var(--teal));box-shadow:0 0 24px rgba(94,234,212,.35)}
+.brand b{font-size:14px;letter-spacing:.4px}
+.brand small{display:block;color:var(--muted);font-size:11px}
+nav.toc a{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 10px;border-radius:8px;color:var(--muted);font-size:13px;
+  border:1px solid transparent;
+}
+nav.toc a:hover{background:var(--surface-tint);color:var(--text);text-decoration:none;border-color:var(--line2)}
+nav.toc a.active{background:rgba(13,148,136,.10);color:var(--teal);border-color:rgba(13,148,136,.30)}
+:root.dark nav.toc a.active{background:rgba(94,234,212,.08);color:var(--teal);border-color:rgba(94,234,212,.25)}
+nav.toc .num{font-family:var(--mono);font-size:11px;opacity:.7}
+nav.toc .grp{margin:14px 0 6px;color:var(--muted);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:0 10px;opacity:.75}
+
+main{min-width:0;padding:28px 36px 80px}
+@media(max-width:980px){main{padding:20px 16px 60px}}
+
+/* Hero */
+.hero{
+  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:30px 28px;margin-bottom:22px;
+  background:
+    radial-gradient(700px 250px at 20% 20%, var(--hero-grad-1), transparent 60%),
+    radial-gradient(600px 250px at 90% 80%, var(--hero-grad-3), transparent 60%),
+    var(--panel);
+}
+:root.dark .hero{
+  background:
+    radial-gradient(700px 250px at 20% 20%, rgba(94,234,212,.18), transparent 60%),
+    radial-gradient(600px 250px at 90% 80%, rgba(167,139,250,.18), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+}
+.hero h1{margin:0 0 8px;font-size:34px;line-height:1.15;letter-spacing:.2px;font-weight:800}
+.hero h1 span{background:linear-gradient(90deg,var(--teal),var(--blue),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);max-width:80ch;margin:6px 0 0;font-size:15px}
+.hero .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface-tint);color:var(--muted);font-size:12px}
+.chip b{color:var(--text);font-weight:700}
+
+section.block{
+  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:24px 24px;margin-bottom:18px;
+  background:var(--panel);
+}
+:root.dark section.block{ background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015)); }
+section.block h2{margin:0 0 6px;font-size:22px;display:flex;gap:10px;align-items:center}
+section.block h2 .pill{font-size:11px;letter-spacing:1px;color:var(--teal);background:rgba(13,148,136,.10);border:1px solid rgba(13,148,136,.30);padding:3px 8px;border-radius:999px;font-weight:700;text-transform:uppercase}
+:root.dark section.block h2 .pill{background:rgba(94,234,212,.08);border-color:rgba(94,234,212,.25)}
+section.block h3{margin:22px 0 8px;font-size:16px;color:var(--text)}
+section.block p,section.block li{color:var(--text);font-size:14.5px}
+section.block .lead{color:var(--muted);font-size:14.5px;margin-top:4px}
+
+/* Cards */
+.cards{display:grid;gap:12px}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:780px){.cards.c2,.cards.c3,.cards.c4{grid-template-columns:1fr}}
+.card{
+  border:1px solid var(--line);border-radius:14px;padding:14px 14px;
+  background: var(--surface-2);
+  transition:transform .15s ease,border-color .15s ease,background .15s ease;
+}
+:root.dark .card{ background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012)); }
+.card:hover{transform:translateY(-2px);border-color:rgba(13,148,136,.45);box-shadow:0 6px 16px rgba(15,23,42,.06)}
+:root.dark .card:hover{ border-color:rgba(94,234,212,.35); box-shadow:none}
+.card .tag{font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:.5px;font-weight:700}
+.card h4{margin:6px 0 6px;font-size:15px;font-weight:700}
+.card p{margin:0;color:var(--muted);font-size:13px}
+.card .links{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.mini{font-size:11px;font-family:var(--mono);padding:2px 6px;border-radius:6px;background:rgba(37,99,235,.10);color:#1d4ed8;border:1px solid rgba(37,99,235,.30)}
+.mini.purple{background:rgba(124,58,237,.10);color:#6d28d9;border-color:rgba(124,58,237,.30)}
+.mini.pink{background:rgba(219,39,119,.10);color:#be185d;border-color:rgba(219,39,119,.30)}
+.mini.yellow{background:rgba(180,83,9,.10);color:#92400e;border-color:rgba(180,83,9,.30)}
+:root.dark .mini{background:rgba(96,165,250,.12);color:#bcd5ff;border-color:rgba(96,165,250,.3)}
+:root.dark .mini.purple{background:rgba(167,139,250,.12);color:#d6c8ff;border-color:rgba(167,139,250,.3)}
+:root.dark .mini.pink{background:rgba(244,114,182,.10);color:#ffc7e3;border-color:rgba(244,114,182,.3)}
+:root.dark .mini.yellow{background:rgba(251,191,36,.12);color:#ffe6a1;border-color:rgba(251,191,36,.3)}
+
+/* Quote */
+.quote{
+  border-left:3px solid var(--teal); padding:10px 14px; background:rgba(13,148,136,.07);
+  border-radius:0 10px 10px 0; color:var(--text); font-size:14px; margin:14px 0;
+}
+:root.dark .quote{ background:rgba(94,234,212,.06); color:#dff5ee; }
+.quote small{display:block;color:var(--muted);margin-top:6px;font-size:11.5px;letter-spacing:.4px}
+
+/* Tables */
+table.tbl{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+table.tbl th,table.tbl td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line2);vertical-align:top;color:var(--text)}
+table.tbl thead th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.6px;background:var(--surface-tint)}
+table.tbl tr:hover td{background:var(--surface-tint)}
+
+/* SVG common */
+svg{display:block;max-width:100%;height:auto}
+.svg-wrap{position:relative;border:1px solid var(--line2);border-radius:12px;background:var(--surface-2);padding:10px;margin-top:10px}
+:root.dark .svg-wrap{ background:rgba(0,0,0,.18); }
+.svg-wrap.tall{min-height:380px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.legend .lg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.legend .sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+
+/* Buttons & toggles */
+button.btn{
+  cursor:pointer;font-family:inherit;font-size:13px;padding:8px 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--surface);color:var(--text);
+  transition:.15s;
+}
+:root.dark button.btn{ background:rgba(255,255,255,.03); }
+button.btn:hover{border-color:var(--teal);color:var(--teal)}
+button.btn.primary{background:linear-gradient(180deg,rgba(13,148,136,.18),rgba(13,148,136,.08));border-color:rgba(13,148,136,.5);color:#0f766e;font-weight:700}
+:root.dark button.btn.primary{background:linear-gradient(180deg,rgba(94,234,212,.2),rgba(94,234,212,.08));border-color:rgba(94,234,212,.5);color:#dffaf2}
+button.btn.bad{border-color:rgba(220,38,38,.4);color:#b91c1c;font-weight:600}
+button.btn.good{border-color:rgba(37,99,235,.4);color:#1d4ed8;font-weight:600}
+button.btn.excellent{border-color:rgba(13,148,136,.45);color:#0f766e;font-weight:600}
+:root.dark button.btn.bad{border-color:rgba(251,113,133,.4);color:#ffd1d8}
+:root.dark button.btn.good{border-color:rgba(96,165,250,.4);color:#cfdcff}
+:root.dark button.btn.excellent{border-color:rgba(94,234,212,.45);color:#cffcf2}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+
+/* ML Test Score */
+.score-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:10px}
+@media(max-width:880px){.score-grid{grid-template-columns:1fr}}
+.score-cat{
+  border:1px solid var(--line);border-radius:14px;padding:14px;
+  background:var(--surface-2);
+}
+:root.dark .score-cat{ background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012)); }
+.score-cat h4{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;font-size:14px;color:var(--text)}
+.score-cat h4 .total{font-family:var(--mono);font-size:13px;color:var(--teal);font-weight:700}
+.test-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line2);font-size:13px}
+.test-row:last-child{border-bottom:none}
+.test-row .name{color:var(--text)}
+.test-row .name small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.tri{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.tri button{
+  background:transparent;border:0;color:var(--muted);font-size:11px;padding:5px 9px;cursor:pointer;font-family:var(--mono);font-weight:700;
+  border-right:1px solid var(--line2);
+}
+.tri button:last-child{border-right:0}
+.tri button.on0{background:rgba(220,38,38,.12);color:#991b1b}
+.tri button.on1{background:rgba(180,83,9,.14);color:#92400e}
+.tri button.on2{background:rgba(13,148,136,.16);color:#0f766e}
+:root.dark .tri button.on0{background:rgba(251,113,133,.15);color:#ffd1d8}
+:root.dark .tri button.on1{background:rgba(251,191,36,.15);color:#ffe6a1}
+:root.dark .tri button.on2{background:rgba(94,234,212,.18);color:#cffcf2}
+
+.score-summary{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;
+}
+@media(max-width:780px){.score-summary{grid-template-columns:1fr}}
+.tier-card{
+  border:1px solid var(--line);border-radius:14px;padding:16px;
+  background:var(--surface);
+}
+:root.dark .tier-card{ background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)); }
+.big-score{font-family:var(--mono);font-size:46px;font-weight:800;letter-spacing:1px;line-height:1;color:var(--text)}
+.big-score .lo{font-size:22px;color:var(--muted)}
+.tier-name{font-size:18px;font-weight:700;margin-top:6px;color:var(--text)}
+.tier-desc{color:var(--muted);font-size:13px;margin-top:6px}
+.tier-meter{height:10px;border-radius:999px;background:var(--surface-tint);margin-top:10px;overflow:hidden}
+.tier-meter > div{height:100%;background:linear-gradient(90deg,var(--red),var(--orange),var(--yellow),var(--blue),var(--teal),var(--green));transition:width .35s ease}
+
+/* Scenario simulator */
+.scenarios{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px}
+@media(max-width:880px){.scenarios{grid-template-columns:1fr}}
+.scenario{
+  border:1px solid var(--line);border-radius:14px;padding:16px;
+  background:var(--surface-2);
+  position:relative;overflow:hidden;
+}
+:root.dark .scenario{ background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012)); }
+.scenario.bad{border-color:rgba(220,38,38,.35)}
+.scenario.good{border-color:rgba(37,99,235,.35)}
+.scenario.exc{border-color:rgba(13,148,136,.45)}
+.scenario h4{margin:0 0 6px;font-size:15px;display:flex;align-items:center;gap:8px;color:var(--text)}
+.scenario h4 .tag{font-size:10px;letter-spacing:1px;padding:2px 7px;border-radius:999px;font-weight:800}
+.scenario.bad h4 .tag{background:rgba(220,38,38,.10);color:#991b1b;border:1px solid rgba(220,38,38,.35)}
+.scenario.good h4 .tag{background:rgba(37,99,235,.10);color:#1d4ed8;border:1px solid rgba(37,99,235,.35)}
+.scenario.exc h4 .tag{background:rgba(13,148,136,.12);color:#0f766e;border:1px solid rgba(13,148,136,.40)}
+:root.dark .scenario.bad h4 .tag{background:rgba(251,113,133,.15);color:#ffb3bd;border-color:rgba(251,113,133,.35)}
+:root.dark .scenario.good h4 .tag{background:rgba(96,165,250,.15);color:#cfdcff;border-color:rgba(96,165,250,.35)}
+:root.dark .scenario.exc h4 .tag{background:rgba(94,234,212,.15);color:#cffcf2;border-color:rgba(94,234,212,.35)}
+.scenario p{margin:6px 0;color:var(--text);font-size:13px}
+.scenario ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:12.5px}
+.scenario .footer{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+
+/* Drift simulator */
+.sim-controls{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+@media(max-width:880px){.sim-controls{grid-template-columns:repeat(2,1fr)}}
+.ctrl{
+  border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface);
+}
+:root.dark .ctrl{ background:rgba(255,255,255,.02); }
+.ctrl label{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-bottom:6px}
+.ctrl label b{color:var(--text);font-family:var(--mono)}
+.ctrl input[type=range]{width:100%}
+
+/* Footer */
+footer.foot{margin-top:28px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:18px}
+
+/* utility */
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spacer{flex:1}
+.kbd{font-family:var(--mono);font-size:11px;background:var(--surface-tint);padding:2px 6px;border-radius:6px;border:1px solid var(--line);color:var(--text)}
+
+/* Heatmap cell */
+.hm-cell{stroke:var(--page-bg-stroke);stroke-width:1}
+.hm-cell:hover{stroke:var(--teal);stroke-width:2}
+
+/* Workflow tooltip */
+.tip{
+  position:absolute;pointer-events:none;background:var(--tip-bg);color:var(--tip-text);
+  border:1px solid var(--tip-border);border-radius:8px;padding:8px 10px;font-size:12px;
+  box-shadow:var(--shadow);max-width:280px;opacity:0;transition:opacity .15s;
+  z-index:50;
+}
+.tip b{color:var(--teal)}
+
+/* Theme toggle button */
+button.theme{
+  position:fixed;top:16px;right:18px;z-index:60;
+  width:38px;height:38px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface);color:var(--text);cursor:pointer;font-size:16px;
+  box-shadow:var(--shadow);
+  transition:transform .15s;
+}
+button.theme:hover{transform:rotate(15deg)}
+
+/* Checklist for adoption */
+.checklist{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.checklist .ck{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--text)}
+.checklist .ck::before{content:"";width:14px;height:14px;border-radius:4px;border:1.5px solid var(--muted);flex:0 0 14px;margin-top:3px}
+.checklist .ck.done::before{background:linear-gradient(135deg,var(--teal),var(--blue));border-color:transparent}
+@media(max-width:780px){.checklist{grid-template-columns:1fr}}
+
+/* Print */
+@media print{
+  aside.nav{display:none}
+  .shell{grid-template-columns:1fr}
+  body{background:#fff;color:#000}
+  section.block,.hero{box-shadow:none;border-color:#ccc;background:#fff}
+  .card{background:#fff;border-color:#ddd}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <aside class="nav">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <b>The Ultimate MLOps Guide</b>
+        <small>Definitions · Architecture · ML Test Score</small>
+      </div>
+    </div>
+    <nav class="toc" id="toc">
+      <div class="grp">Foundations</div>
+      <a href="#intro"><span>Introduction</span><span class="num">00</span></a>
+      <a href="#definition"><span>Definition</span><span class="num">01</span></a>
+      <a href="#disciplines"><span>Disciplines (Venn)</span><span class="num">02</span></a>
+      <div class="grp">Anatomy</div>
+      <a href="#principles"><span>9 Principles</span><span class="num">03</span></a>
+      <a href="#components"><span>9 Components</span><span class="num">04</span></a>
+      <a href="#pcgraph"><span>P↔C Graph</span><span class="num">05</span></a>
+      <a href="#roles"><span>7 Roles (Chord)</span><span class="num">06</span></a>
+      <div class="grp">Operations</div>
+      <a href="#workflow"><span>End-to-End Workflow</span><span class="num">07</span></a>
+      <a href="#sankey"><span>Artifact Flow</span><span class="num">08</span></a>
+      <a href="#heatmap"><span>Roles × Stages</span><span class="num">09</span></a>
+      <div class="grp">Adoption</div>
+      <a href="#scenarios"><span>Bad / Good / Excellent</span><span class="num">10</span></a>
+      <a href="#maturity"><span>Maturity Simulator</span><span class="num">11</span></a>
+      <div class="grp">Evaluation</div>
+      <a href="#mltest"><span>ML Test Score Rubric</span><span class="num">12</span></a>
+      <a href="#drift"><span>Monitoring Simulator</span><span class="num">13</span></a>
+      <div class="grp">Reference</div>
+      <a href="#challenges"><span>Open Challenges</span><span class="num">14</span></a>
+      <a href="#glossary"><span>Glossary</span><span class="num">15</span></a>
+      <a href="#refs"><span>References</span><span class="num">16</span></a>
+    </nav>
+  </aside>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero" id="intro">
+      <div class="row">
+        <span class="chip"><b>Source A</b> Kreuzberger, Kühl, Hirschl · arXiv:2205.02302</span>
+        <span class="chip"><b>Source B</b> Breck et al. · ML Test Score (IEEE Big Data 2017)</span>
+        <span class="chip"><b>Format</b> Interactive · D3 · Simulators</span>
+        <span class="chip"><b>Use</b> Reference · Self-assessment</span>
+      </div>
+      <h1 style="margin-top:14px">The <span>Ultimate MLOps Guide</span><br/>Definitions, Architecture, Adoption Patterns &amp; Production-Readiness Scoring</h1>
+      <p>An exhaustive, opinionated walk-through that fuses the academic definition of MLOps (principles · components · roles · architecture) from Kreuzberger et al. with the production-readiness rubric of the ML Test Score by Breck et al. — wrapped in interactive D3 diagrams and simulators so you can <i>see</i>, <i>play</i>, and <i>self-evaluate</i>.</p>
+      <div class="meta">
+        <span class="chip">📐 9 principles</span>
+        <span class="chip">🧩 9 components</span>
+        <span class="chip">👥 7 roles</span>
+        <span class="chip">🔄 4 workflow stages</span>
+        <span class="chip">✅ 28 production tests</span>
+        <span class="chip">📊 6 maturity tiers</span>
+      </div>
+    </section>
+
+    <!-- DEFINITION -->
+    <section class="block" id="definition">
+      <h2><span class="pill">01</span> What is MLOps? — Formal Definition</h2>
+      <p class="lead">MLOps is not a tool or a product. It's a paradigm — best practices + concepts + culture — for taking ML from notebook to production reliably and repeatably.</p>
+
+      <div class="quote">
+        <i>“MLOps (Machine Learning Operations) is a paradigm, including aspects like best practices, sets of concepts, as well as a development culture when it comes to the end-to-end conceptualization, implementation, monitoring, deployment, and scalability of machine learning products. Most of all, it is an engineering practice that leverages three contributing disciplines: machine learning, software engineering (especially DevOps), and data engineering.”</i>
+        <small>Kreuzberger, Kühl, Hirschl — <i>Machine Learning Operations (MLOps): Overview, Definition, and Architecture</i> (2022)</small>
+      </div>
+
+      <div class="cards c3" style="margin-top:14px">
+        <div class="card"><div class="tag">GOAL</div><h4>Productionize ML</h4><p>Bridge the Dev↔Ops gap so ML proofs of concept actually reach production and stay there.</p></div>
+        <div class="card"><div class="tag">SCOPE</div><h4>End-to-end</h4><p>Conceptualization → implementation → monitoring → deployment → scalability of the ML product.</p></div>
+        <div class="card"><div class="tag">CULTURE</div><h4>Product-oriented</h4><p>Shift away from model-driven thinking; treat ML systems as products owned by cross-functional teams.</p></div>
+      </div>
+
+      <h3>Why it matters (and why it usually fails)</h3>
+      <ul>
+        <li><b>Manual workflows.</b> Data scientists still operate ML by hand → fragile production behavior.</li>
+        <li><b>Silos.</b> Data, modelling, infra, and ops live in different teams with different stacks.</li>
+        <li><b>Hidden technical debt.</b> Pipelines accrue undocumented dependencies, skews, and stale features.</li>
+        <li><b>No feedback loop.</b> Models drift in production with nobody noticing until business KPIs collapse.</li>
+      </ul>
+    </section>
+
+    <!-- VENN -->
+    <section class="block" id="disciplines">
+      <h2><span class="pill">02</span> The Three Contributing Disciplines</h2>
+      <p class="lead">MLOps sits at the intersection of <b>Machine Learning</b>, <b>Software Engineering / DevOps</b>, and <b>Data Engineering</b>. The center of gravity is sometimes called <span class="mini">CD4ML</span> (continuous delivery for machine learning).</p>
+      <div class="svg-wrap" id="venn"></div>
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background:#5eead4"></span>Machine Learning</span>
+        <span class="lg"><span class="sw" style="background:#60a5fa"></span>Software Engineering / DevOps</span>
+        <span class="lg"><span class="sw" style="background:#a78bfa"></span>Data Engineering</span>
+        <span class="lg"><span class="sw" style="background:#f472b6"></span>MLOps (intersection)</span>
+      </div>
+    </section>
+
+    <!-- PRINCIPLES -->
+    <section class="block" id="principles">
+      <h2><span class="pill">03</span> The 9 MLOps Principles</h2>
+      <p class="lead">A <i>principle</i> is a value or guide for behavior — closely related to the term “best practice”. Hover a card to highlight the components it implements in the next section.</p>
+      <div class="cards c3" id="principlesGrid"></div>
+    </section>
+
+    <!-- COMPONENTS -->
+    <section class="block" id="components">
+      <h2><span class="pill">04</span> The 9 Technical Components</h2>
+      <p class="lead">Components are the concrete pieces that <i>implement</i> the principles. The bracketed tags show which principles each component instantiates.</p>
+      <div class="cards c3" id="componentsGrid"></div>
+    </section>
+
+    <!-- P-C GRAPH -->
+    <section class="block" id="pcgraph">
+      <h2><span class="pill">05</span> Principles ↔ Components — Force-Directed Graph</h2>
+      <p class="lead">A live mapping between the 9 principles and the 9 components. <span class="mini">Drag</span> nodes to rearrange. Hover to highlight relationships.</p>
+      <div class="svg-wrap tall" id="pcgraph_svg"></div>
+    </section>
+
+    <!-- ROLES -->
+    <section class="block" id="roles">
+      <h2><span class="pill">06</span> The 7 Roles &amp; How They Overlap</h2>
+      <p class="lead">MLOps is an interdisciplinary group process. The chord diagram shows where each role's responsibilities overlap with the others — the wider the chord, the deeper the shared territory.</p>
+      <div class="svg-wrap tall" id="chord_svg"></div>
+      <div class="cards c4" id="rolesGrid" style="margin-top:14px"></div>
+    </section>
+
+    <!-- WORKFLOW -->
+    <section class="block" id="workflow">
+      <h2><span class="pill">07</span> End-to-End Workflow — Interactive Architecture (Figure 4)</h2>
+      <p class="lead">A pixel-faithful reproduction of <b>Figure 4</b> of Kreuzberger et al. — the full end-to-end MLOps architecture with all four zones (Initiation · Data Engineering · ML Experimentation · ML Production), the feature store (offline/online DBs), the repository, CI/CD, model registry, scheduler &amp; orchestration component, model serving, monitoring, and the feedback loops. Use the toolbar inside the figure to toggle <b>rounded corners</b>, <b>color-coded actors</b>, or to overlay the <b>critical path</b>. Hover any zone (A · B · C · D) to isolate its components.</p>
+      <div class="row" style="margin:6px 0 10px;gap:10px">
+        <a class="btn" href="figure4.html" target="_blank" rel="noopener">↗ Open figure in a new tab</a>
+        <button class="btn" id="wf_full" type="button">⛶ Full-bleed view</button>
+      </div>
+      <div class="svg-wrap" id="wf_frame_wrap" style="padding:0;border-radius:12px;overflow:hidden;background:#fff">
+        <iframe id="wf_iframe" src="figure4.html" loading="lazy" scrolling="no"
+          title="End-to-end MLOps architecture (Figure 4)"
+          style="width:100%;height:1080px;border:0;display:block;background:#fff;overflow:hidden"></iframe>
+      </div>
+      <div class="legend" style="margin-top:10px">
+        <span class="lg"><span class="sw" style="background:#000"></span>General process flow</span>
+        <span class="lg"><span class="sw" style="background:#8b6fbf"></span>Data engineering flow</span>
+        <span class="lg"><span class="sw" style="background:#1f6fea"></span>Versioned feature flow</span>
+        <span class="lg"><span class="sw" style="background:#6b7280"></span>Model / Code flow</span>
+        <span class="lg"><span class="sw" style="background:repeating-linear-gradient(90deg,#000 0 6px,transparent 6px 10px)"></span>Feedback loop</span>
+      </div>
+    </section>
+
+    <!-- SANKEY -->
+    <section class="block" id="sankey">
+      <h2><span class="pill">08</span> Artifact Flow — Sankey Diagram</h2>
+      <p class="lead">Tracking how raw data, code, features, models, predictions, and metadata flow between systems. Width = relative volume / dependence.</p>
+      <div class="svg-wrap" id="sankey_svg"></div>
+    </section>
+
+    <!-- HEATMAP -->
+    <section class="block" id="heatmap">
+      <h2><span class="pill">09</span> Roles × Stages — Responsibility Heatmap</h2>
+      <p class="lead">Who does what, when. Darker cells = primary responsibility, lighter = supporting role. Hover a cell to see specifics.</p>
+      <div class="svg-wrap" id="heatmap_svg"></div>
+    </section>
+
+    <!-- SCENARIOS -->
+    <section class="block" id="scenarios">
+      <h2><span class="pill">10</span> Adoption Scenarios — Bad · Good · Excellent</h2>
+      <p class="lead">Three archetypes of how organizations actually adopt MLOps. Click a scenario to load its profile into the Maturity Simulator (§11) and the ML Test Score Rubric (§12) — you'll see the score change in real time.</p>
+      <div class="scenarios" id="scenarios"></div>
+    </section>
+
+    <!-- MATURITY -->
+    <section class="block" id="maturity">
+      <h2><span class="pill">11</span> Maturity Simulator — 9 Principles Adoption</h2>
+      <p class="lead">Drag each slider to indicate how thoroughly your team has adopted that principle (0 = absent, 1 = manual/partial, 2 = fully automated &amp; cultural). The radar updates live.</p>
+      <div class="row" style="margin-top:6px">
+        <button class="btn bad" data-preset="bad">Load: Bad</button>
+        <button class="btn good" data-preset="good">Load: Good</button>
+        <button class="btn excellent" data-preset="excellent">Load: Excellent</button>
+        <button class="btn" data-preset="zero">Reset to 0</button>
+        <span class="spacer"></span>
+        <span class="chip"><b>Maturity index</b> <span id="maturity_idx">0.00 / 2.00</span></span>
+      </div>
+      <div class="cards c2" style="margin-top:10px">
+        <div>
+          <div id="maturity_sliders"></div>
+        </div>
+        <div class="svg-wrap" id="radar_svg"></div>
+      </div>
+    </section>
+
+    <!-- ML TEST SCORE -->
+    <section class="block" id="mltest">
+      <h2><span class="pill">12</span> ML Test Score Rubric — Live Calculator</h2>
+      <p class="lead">Breck et al.'s 28 tests across four sections — <b>Features &amp; Data</b>, <b>Model Development</b>, <b>ML Infrastructure</b>, and <b>Monitoring</b>. For each test pick <span class="mini" style="background:rgba(251,113,133,.15);color:#ffd1d8;border-color:rgba(251,113,133,.35)">0</span> (not done) · <span class="mini yellow">½</span> (manual) · <span class="mini" style="background:rgba(94,234,212,.15);color:#cffcf2;border-color:rgba(94,234,212,.35)">1</span> (automated). Final score = <b>min</b> across sections.</p>
+      <div class="toolbar">
+        <button class="btn bad" id="ts_bad">Preset: Bad</button>
+        <button class="btn good" id="ts_good">Preset: Good</button>
+        <button class="btn excellent" id="ts_exc">Preset: Excellent</button>
+        <button class="btn" id="ts_reset">Reset</button>
+        <span class="spacer"></span>
+        <span class="chip"><b>Sum</b> <span id="ts_sum">0</span> / 28</span>
+      </div>
+      <div class="score-grid" id="ts_grid"></div>
+      <div class="score-summary">
+        <div class="tier-card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div class="big-score" id="ts_final">0<span class="lo"> / 7</span></div>
+              <div class="tier-name" id="ts_tier_name">Research project</div>
+              <div class="tier-desc" id="ts_tier_desc">More of a research project than a productionized system.</div>
+            </div>
+            <div id="ts_tier_emoji" style="font-size:48px">🧪</div>
+          </div>
+          <div class="tier-meter"><div id="ts_meter" style="width:0%"></div></div>
+          <div class="lead" style="margin-top:8px;font-size:12px">Final = MIN of the four section scores. The minimum forces you to invest evenly across all four areas.</div>
+        </div>
+        <div class="tier-card">
+          <h3 style="margin-top:0">Section breakdown</h3>
+          <div class="svg-wrap" id="ts_bars_svg" style="padding:6px;background:transparent;border:none"></div>
+          <div class="lead" style="margin-top:6px;font-size:12px">Each section sums up to 7 (7 tests × max 1 point). The lowest pillar drags down the entire system.</div>
+        </div>
+      </div>
+      <h3>Score interpretation tiers</h3>
+      <table class="tbl" id="tier_table">
+        <thead><tr><th style="width:90px">Score</th><th>Interpretation</th><th style="width:80px"></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- DRIFT -->
+    <section class="block" id="drift">
+      <h2><span class="pill">13</span> Production Monitoring — Drift &amp; Skew Simulator</h2>
+      <p class="lead">A live D3 simulation of an ML system in production. Adjust the dials to inject covariate drift, concept drift, training/serving skew, or staleness — and watch the monitoring component fire alerts (Monitor 1–7 from the rubric).</p>
+      <div class="sim-controls">
+        <div class="ctrl"><label>Covariate drift <b id="d_cov_v">0.00</b></label><input type="range" min="0" max="1" step="0.01" value="0" id="d_cov"></div>
+        <div class="ctrl"><label>Concept drift <b id="d_con_v">0.00</b></label><input type="range" min="0" max="1" step="0.01" value="0" id="d_con"></div>
+        <div class="ctrl"><label>Training/serving skew <b id="d_skew_v">0.00</b></label><input type="range" min="0" max="1" step="0.01" value="0" id="d_skew"></div>
+        <div class="ctrl"><label>Model staleness (days) <b id="d_age_v">0</b></label><input type="range" min="0" max="365" step="1" value="0" id="d_age"></div>
+      </div>
+      <div class="svg-wrap" id="drift_svg"></div>
+      <div id="drift_alerts" class="row" style="margin-top:10px;gap:6px"></div>
+    </section>
+
+    <!-- CHALLENGES -->
+    <section class="block" id="challenges">
+      <h2><span class="pill">14</span> Open Challenges</h2>
+      <div class="cards c3">
+        <div class="card"><div class="tag">ORGANIZATIONAL</div><h4>Mindset &amp; culture</h4><p>Shift from model-centric to product-centric. Break data-science silos; convince stakeholders that MLOps maturity yields business gains.</p></div>
+        <div class="card"><div class="tag">ORGANIZATIONAL</div><h4>Skills &amp; education</h4><p>Shortage of architects, data engineers, ML/DevOps engineers. MLOps is rarely part of academic curricula.</p></div>
+        <div class="card"><div class="tag">ML SYSTEM</div><h4>Fluctuating demand</h4><p>Training jobs have spiky CPU/RAM/GPU needs and varying data volumes — infra must scale elastically.</p></div>
+        <div class="card"><div class="tag">OPERATIONAL</div><h4>Manual operation in prod</h4><p>Heterogeneous stacks make manual ops error-prone. Continuous incoming data forces frequent retraining.</p></div>
+        <div class="card"><div class="tag">OPERATIONAL</div><h4>Governance of artifacts</h4><p>Strong versioning of data, models, and code is needed for reproducibility, auditability, and incident root-cause analysis.</p></div>
+        <div class="card"><div class="tag">OPERATIONAL</div><h4>Multi-party support</h4><p>Failures span ML, infra, and software components — root-causing requires cross-team observability.</p></div>
+      </div>
+    </section>
+
+    <!-- GLOSSARY -->
+    <section class="block" id="glossary">
+      <h2><span class="pill">15</span> Glossary</h2>
+      <table class="tbl" id="glossary_tbl">
+        <thead><tr><th style="width:200px">Term</th><th>Definition</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- REFERENCES -->
+    <section class="block" id="refs">
+      <h2><span class="pill">16</span> References</h2>
+      <ol style="padding-left:18px;color:#d6dcf2;font-size:14px">
+        <li>Kreuzberger D., Kühl N., Hirschl S. — <i>Machine Learning Operations (MLOps): Overview, Definition, and Architecture</i>. arXiv:2205.02302 (2022). <a href="https://arxiv.org/abs/2205.02302" target="_blank" rel="noopener">arxiv.org/abs/2205.02302</a></li>
+        <li>Breck E., Cai S., Nielsen E., Salib M., Sculley D. — <i>The ML Test Score: A Rubric for ML Production Readiness and Technical Debt Reduction</i>. IEEE Big Data (2017). <a href="https://research.google/pubs/the-ml-test-score-a-rubric-for-ml-production-readiness-and-technical-debt-reduction/" target="_blank" rel="noopener">research.google/pubs/...</a></li>
+        <li>Sculley D. et al. — <i>Hidden Technical Debt in Machine Learning Systems</i>. NeurIPS (2015).</li>
+      </ol>
+
+      <footer class="foot">
+        Built as a single-file interactive guide. All content is grounded in the two cited papers; interpretations, simulators and adoption profiles are illustrative and editorial. Use <span class="kbd">Ctrl/⌘+P</span> to print a hard copy.
+      </footer>
+    </section>
+
+  </main>
+</div>
+
+<button class="theme" id="theme_toggle" title="Toggle light / dark theme">🌙</button>
+<div class="tip" id="tip"></div>
+
+<script>
+/* ================================================================
+   THEME helpers
+   ================================================================ */
+function cssv(name){
+  return getComputedStyle(document.documentElement).getPropertyValue('--'+name).trim();
+}
+const C = {
+  text:    () => cssv('svg-text'),
+  muted:   () => cssv('svg-muted'),
+  grid:    () => cssv('svg-grid'),
+  gridS:   () => cssv('svg-grid-strong'),
+  nodeBg:  () => cssv('node-bg'),
+  nodeStr: () => cssv('node-stroke'),
+  pageStr: () => cssv('page-bg-stroke'),
+  bg:      () => cssv('bg'),
+};
+
+/* ================================================================
+   DATA
+   ================================================================ */
+const PRINCIPLES = [
+  {id:"P1", title:"CI/CD automation", desc:"Continuous integration, delivery and deployment with fast feedback to developers on build, test and deploy steps."},
+  {id:"P2", title:"Workflow orchestration", desc:"Coordinates ML pipeline tasks via DAGs (directed acyclic graphs) — defines execution order and dependencies."},
+  {id:"P3", title:"Reproducibility", desc:"Ability to re-run an ML experiment and obtain the exact same results — critical for audit and debugging."},
+  {id:"P4", title:"Versioning", desc:"Versioning of data, model, and code to enable reproducibility, traceability, compliance and audit."},
+  {id:"P5", title:"Collaboration", desc:"Collaborative work culture that reduces silos between data, ML, ops and engineering roles."},
+  {id:"P6", title:"Continuous ML training & evaluation", desc:"Periodic retraining on new feature data, with automated evaluation runs to assess quality changes."},
+  {id:"P7", title:"ML metadata tracking / logging", desc:"Track metadata for every orchestrated ML task: parameters, metrics, lineage, durations, training IDs."},
+  {id:"P8", title:"Continuous monitoring", desc:"Periodic assessment of data, model, code, infrastructure, and serving — detect errors that change product quality."},
+  {id:"P9", title:"Feedback loops", desc:"Multiple loops feed monitoring insights back to feature engineering, experimentation, and the scheduler."}
+];
+
+const COMPONENTS = [
+  {id:"C1", title:"CI/CD component", desc:"Build, test, deliver, deploy — fast feedback for developers (e.g., Jenkins, GitHub Actions).", links:["P1","P6","P9"]},
+  {id:"C2", title:"Source code repository", desc:"Code storage and versioning, multi-developer commits and merges (Git: GitHub, GitLab, Bitbucket).", links:["P4","P5"]},
+  {id:"C3", title:"Workflow orchestration component", desc:"Task orchestration of the ML workflow via DAGs (Airflow, Kubeflow Pipelines, SageMaker Pipelines).", links:["P2","P3","P6"]},
+  {id:"C4", title:"Feature store system", desc:"Central feature storage with offline DB (training latency) and online DB (serving latency) — Feast, Tecton.", links:["P3","P4"]},
+  {id:"C5", title:"Model training infrastructure", desc:"Foundational compute (CPU/RAM/GPU), distributed when needed (Kubernetes, OpenShift).", links:["P6"]},
+  {id:"C6", title:"Model registry", desc:"Central trained-model store with metadata (MLflow, SageMaker / Azure ML / Neptune model registry).", links:["P3","P4"]},
+  {id:"C7", title:"ML metadata stores", desc:"Track metadata for every pipeline task and run — params, metrics, lineage of data &amp; code.", links:["P4","P7"]},
+  {id:"C8", title:"Model serving component", desc:"Online (real-time) or batch inference, often via REST API on Kubernetes (KServe, TF Serving, Seldon).", links:["P1"]},
+  {id:"C9", title:"Monitoring component", desc:"Continuous observation of model performance + ML infra + CI/CD orchestration (Prometheus + Grafana, ELK).", links:["P8","P9"]}
+];
+
+const ROLES = [
+  {id:"R1", title:"Business Stakeholder", desc:"Defines business goal; owns ROI communication. Similar: Product Owner, Project Manager."},
+  {id:"R2", title:"Solution Architect", desc:"Designs the architecture; selects technologies after thorough evaluation."},
+  {id:"R3", title:"Data Scientist", desc:"Translates business problems into ML problems; chooses algorithms and hyperparameters."},
+  {id:"R4", title:"Data Engineer", desc:"Builds and operates data &amp; feature engineering pipelines; ensures clean ingestion to the feature store."},
+  {id:"R5", title:"Software Engineer", desc:"Applies design patterns and coding standards to turn raw ML into a well-engineered product."},
+  {id:"R6", title:"DevOps Engineer", desc:"Bridges Dev↔Ops; CI/CD automation, workflow orchestration, deployment to prod, monitoring."},
+  {id:"R7", title:"ML / MLOps Engineer", desc:"Cross-domain role spanning DS + DE + DevOps + SE + Backend; builds and operates the platform."}
+];
+
+/* role-overlap matrix: 0..1 (subjective synthesis from the paper's role description) */
+const ROLE_OVERLAP = (() => {
+  const ids = ROLES.map(r=>r.id);
+  const m = {};
+  ids.forEach(a=>{m[a]={}; ids.forEach(b=> m[a][b] = a===b? 0 : 0)});
+  const set=(a,b,v)=>{ m[a][b]=v; m[b][a]=v;};
+  set("R1","R2",0.4); set("R1","R3",0.3); set("R1","R7",0.2);
+  set("R2","R3",0.4); set("R2","R5",0.5); set("R2","R6",0.6); set("R2","R7",0.7);
+  set("R3","R4",0.7); set("R3","R5",0.4); set("R3","R7",0.8);
+  set("R4","R5",0.4); set("R4","R6",0.4); set("R4","R7",0.7);
+  set("R5","R6",0.6); set("R5","R7",0.7);
+  set("R6","R7",0.85);
+  return m;
+})();
+
+const STAGES = [
+  {id:"A", title:"MLOps Project Initiation", color:"#fbbf24"},
+  {id:"B", title:"Feature Engineering Pipeline", color:"#a78bfa"},
+  {id:"C", title:"Experimentation", color:"#60a5fa"},
+  {id:"D", title:"Automated ML Workflow Pipeline", color:"#5eead4"}
+];
+
+/* 28 workflow steps mapped to stages and lead role */
+const WF_STEPS = [
+  {n:1, stage:"A", role:"R1", text:"Business stakeholder analyzes the problem and identifies an ML opportunity."},
+  {n:2, stage:"A", role:"R2", text:"Solution architect defines the architecture and chooses technologies."},
+  {n:3, stage:"A", role:"R3", text:"Data scientist derives the ML problem (regression/classification/...)."},
+  {n:4, stage:"A", role:"R3", text:"DS + DE identify which data is required to solve it."},
+  {n:5, stage:"A", role:"R4", text:"DE + DS locate the raw data sources, run distribution and quality checks."},
+  {n:6, stage:"B1", role:"R4", text:"DE defines transformation rules (normalization, aggregations, cleaning)."},
+  {n:7, stage:"B1", role:"R3", text:"DS + DE define the feature engineering rules; iterated via feedback."},
+  {n:8, stage:"B2", role:"R4", text:"Define infra config for the feature engineering pipeline."},
+  {n:9, stage:"B2", role:"R4", text:"Pipeline connects to raw data (streaming / batch / cloud storage)."},
+  {n:10, stage:"B2", role:"R4", text:"Data preprocessing — transformation and cleaning."},
+  {n:11, stage:"B2", role:"R4", text:"Compute new advanced features from existing ones."},
+  {n:12, stage:"B2", role:"R4", text:"Data ingestion job loads features into offline / online feature store."},
+  {n:13, stage:"C", role:"R3", text:"DS connects to the feature store (or raw data) for analysis."},
+  {n:14, stage:"C", role:"R3", text:"Train/test split + data validation."},
+  {n:15, stage:"C", role:"R3", text:"Best-algorithm + hyperparameter search; iterative model training."},
+  {n:16, stage:"C", role:"R3", text:"Several rounds of training + validation (model engineering)."},
+  {n:17, stage:"C", role:"R3", text:"Export the model and commit code to the repository."},
+  {n:18, stage:"D", role:"R7", text:"Automated extraction of versioned features."},
+  {n:19, stage:"D", role:"R7", text:"Automated data preparation, validation and split."},
+  {n:20, stage:"D", role:"R7", text:"Automated final training on unseen versioned features."},
+  {n:21, stage:"D", role:"R7", text:"Automated model evaluation + iterative HP tuning if needed."},
+  {n:22, stage:"D", role:"R7", text:"Trained model exported and pushed to the model registry."},
+  {n:23, stage:"D", role:"R6", text:"Production-ready model + serving code pulled by DevOps."},
+  {n:24, stage:"D", role:"R1", text:"CI/CD triggers continuous deployment of model + serving code."},
+  {n:25, stage:"D", role:"R7", text:"Model serving component runs online or batch inference."},
+  {n:26, stage:"D", role:"R7", text:"Monitoring observes serving performance + infra in real time."},
+  {n:27, stage:"D", role:"R7", text:"Feedback loop forwards alerts to the scheduler / experiment / data-eng zone."},
+  {n:28, stage:"D", role:"R7", text:"Concept drift detection triggers automated retraining (continuous training)."}
+];
+
+/* ML Test Score — 28 tests in 4 categories */
+const ML_TESTS = {
+  data: { label:"Features &amp; Data", color:"#a78bfa", items:[
+    {k:"D1", t:"Feature expectations are captured in a schema", h:"Encode data intuitions; auto-check during training and serving."},
+    {k:"D2", t:"All features are beneficial", h:"Every feature should add predictive value beyond the others."},
+    {k:"D3", t:"No feature's cost is too much", h:"Features cost RAM, latency, dependencies — drop ε-features."},
+    {k:"D4", t:"Features adhere to meta-level requirements", h:"Privacy, deprecation, source-of-truth requirements are programmatically enforced."},
+    {k:"D5", t:"The data pipeline has appropriate privacy controls", h:"PII is removed/handled correctly; user deletion propagates."},
+    {k:"D6", t:"New features can be added quickly", h:"Onboarding a new feature should take days/weeks, not quarters."},
+    {k:"D7", t:"All input feature code is tested", h:"Feature code is part of the ML system — unit-test it."},
+  ]},
+  model: { label:"Model Development", color:"#60a5fa", items:[
+    {k:"M1", t:"Model specs are reviewed and submitted", h:"Code review and versioning of model specs."},
+    {k:"M2", t:"Offline and online metrics correlate", h:"Validate that proxy metrics (log-loss, etc.) move user-facing KPIs."},
+    {k:"M3", t:"All hyperparameters have been tuned", h:"Grid/random/bayesian — tuning often surfaces hidden bugs."},
+    {k:"M4", t:"The impact of model staleness is known", h:"Quantify quality decay vs. model age; pick a refresh cadence."},
+    {k:"M5", t:"A simpler model is not better", h:"Compare against a linear/baseline model regularly."},
+    {k:"M6", t:"Model quality is sufficient on important data slices", h:"Check per-segment quality (geo, device, demographics)."},
+    {k:"M7", t:"The model is tested for considerations of inclusion", h:"Fairness checks across protected groups."},
+  ]},
+  infra: { label:"ML Infrastructure", color:"#5eead4", items:[
+    {k:"I1", t:"Training is reproducible", h:"Same data + code → same model. Seed RNGs and pin deps."},
+    {k:"I2", t:"Model specs are unit tested", h:"API-usage tests + algorithmic-correctness tests."},
+    {k:"I3", t:"The full ML pipeline is integration tested", h:"End-to-end test from raw data to served prediction."},
+    {k:"I4", t:"Model quality is validated before serving", h:"Auto-veto deploys that fail quality thresholds."},
+    {k:"I5", t:"The model is debuggable", h:"Step-by-step inspection on a single example."},
+    {k:"I6", t:"Models are canaried before serving", h:"Canary on a slice of traffic; catch model-vs-binary mismatches."},
+    {k:"I7", t:"Serving models can be rolled back", h:"Single-command rollback to last known-good version."},
+  ]},
+  monitor: { label:"Monitoring", color:"#fbbf24", items:[
+    {k:"O1", t:"Dependency changes result in notification", h:"Subscribe to upstream data/source notifications."},
+    {k:"O2", t:"Data invariants hold for inputs", h:"Compare incoming data to the schema; alert on drift."},
+    {k:"O3", t:"Training and serving are not skewed", h:"Log serving features; compare to training features."},
+    {k:"O4", t:"Models are not too stale", h:"Track model age in production and at every pipeline stage."},
+    {k:"O5", t:"Models are numerically stable", h:"Alert on NaN/Inf, dead ReLUs, exploding weights."},
+    {k:"O6", t:"Computing performance has not regressed", h:"Track training speed, latency, throughput, RAM."},
+    {k:"O7", t:"Prediction quality has not regressed", h:"Track served-prediction quality vs. validation baseline."},
+  ]}
+};
+
+/* Tier interpretation table (Breck et al., Table V) — colors resolved from CSS at draw time */
+const TIERS = [
+  {min:0, max:0,  emoji:"🧪", colorVar:"red",    name:"Research project",
+   desc:"More of a research project than a productionized system."},
+  {min:0, max:1,  emoji:"⚠️", colorVar:"orange", name:"Untrustworthy",
+   desc:"Not totally untested, but worth considering the possibility of serious holes in reliability."},
+  {min:1, max:2,  emoji:"🛠", colorVar:"yellow", name:"Basic productionization",
+   desc:"There's been a first pass at productionization, but additional investment may be needed."},
+  {min:2, max:3,  emoji:"📦", colorVar:"blue",   name:"Reasonably tested",
+   desc:"Reasonably tested, but it's possible that more of those tests and procedures may be automated."},
+  {min:3, max:5,  emoji:"🚀", colorVar:"teal",   name:"Mission-critical ready",
+   desc:"Strong levels of automated testing and monitoring, appropriate for mission-critical systems."},
+  {min:5, max:99, emoji:"🏆", colorVar:"green",  name:"Exceptional",
+   desc:"Exceptional levels of automated testing and monitoring."}
+];
+TIERS.forEach(t=> Object.defineProperty(t,"color",{get(){return cssv(this.colorVar);}}));
+function tierFor(score){
+  if(score===0) return TIERS[0];
+  for(let i=1;i<TIERS.length;i++){
+    const t=TIERS[i];
+    if(score>t.min && score<=t.max) return t;
+  }
+  return TIERS[TIERS.length-1];
+}
+
+/* Sankey artifact flow — strict DAG (left → right). Feedback shown as terminal "Retraining trigger" sink. */
+const SANKEY = {
+  nodes:[
+    {name:"Raw Data"},
+    {name:"Feature Eng. Pipeline"},
+    {name:"Source Code Repo"},
+    {name:"Feature Store"},
+    {name:"Experimentation"},
+    {name:"CI/CD"},
+    {name:"Model Training"},
+    {name:"Metadata Store"},
+    {name:"Model Registry"},
+    {name:"Model Serving"},
+    {name:"Monitoring"},
+    {name:"Retraining Trigger"}
+  ],
+  links:[
+    {source:"Raw Data",                 target:"Feature Eng. Pipeline", value:8},
+    {source:"Feature Eng. Pipeline",    target:"Feature Store",          value:8},
+    {source:"Feature Store",            target:"Experimentation",        value:5},
+    {source:"Feature Store",            target:"Model Training",         value:6},
+    {source:"Feature Store",            target:"Model Serving",          value:5},
+    {source:"Experimentation",          target:"Source Code Repo",       value:3},
+    {source:"Source Code Repo",         target:"CI/CD",                  value:6},
+    {source:"CI/CD",                    target:"Model Training",         value:4},
+    {source:"Model Training",           target:"Model Registry",         value:7},
+    {source:"Model Training",           target:"Metadata Store",         value:5},
+    {source:"Model Registry",           target:"Model Serving",          value:7},
+    {source:"Model Serving",            target:"Monitoring",             value:7},
+    {source:"Monitoring",               target:"Retraining Trigger",     value:6}
+  ]
+};
+
+/* Heatmap: Roles × Stages */
+const RS_STAGES = ["A. Initiation","B. Feature Eng.","C. Experimentation","D. Automated Pipeline","Monitoring & Ops"];
+const RS_MATRIX = [
+  /* R1 */ [3, 0, 0, 1, 1],
+  /* R2 */ [3, 1, 1, 1, 1],
+  /* R3 */ [2, 2, 3, 1, 1],
+  /* R4 */ [2, 3, 1, 1, 1],
+  /* R5 */ [0, 1, 2, 1, 1],
+  /* R6 */ [0, 0, 0, 3, 2],
+  /* R7 */ [0, 1, 1, 3, 3],
+];
+
+/* Glossary */
+const GLOSSARY = [
+  ["Concept drift","Change in the relationship between input features and the target — what the model learned no longer holds."],
+  ["Covariate / data drift","Change in the input distribution while the target relationship is stable."],
+  ["Training/serving skew","The same feature is computed differently at training time and serving time."],
+  ["Feature store","Centralized system for storing and serving features with offline (training) and online (serving) latency profiles."],
+  ["Model registry","Central versioned store for trained model artifacts and their metadata."],
+  ["Model lineage","Reproducible chain linking a trained model back to its data, code, and parameters."],
+  ["Canary deployment","Releasing a new model to a small slice of traffic before full rollout."],
+  ["Feedback loop","Automated channel from monitoring back to data, experimentation, or training."],
+  ["DAG","Directed acyclic graph — used by orchestration tools to express pipeline dependencies."],
+  ["CD4ML","Continuous Delivery for Machine Learning — the intersection of ML and DevOps practices."],
+  ["Reproducibility","Re-running an experiment must yield the same model and metrics."],
+  ["Mission-critical ML","ML system whose failure carries material business or safety consequences."],
+];
+
+/* ================================================================
+   RENDER: Principles, Components, Roles
+   ================================================================ */
+function el(tag, attrs={}, ...children){
+  const e=document.createElement(tag);
+  Object.entries(attrs).forEach(([k,v])=>{
+    if(k==="class") e.className=v;
+    else if(k.startsWith("on") && typeof v==="function") e.addEventListener(k.slice(2), v);
+    else if(k==="html") e.innerHTML=v;
+    else e.setAttribute(k,v);
+  });
+  children.flat().forEach(c=>{
+    if(c==null) return;
+    if(typeof c==="string") e.appendChild(document.createTextNode(c));
+    else e.appendChild(c);
+  });
+  return e;
+}
+
+function buildPrinciples(){
+  const grid=document.getElementById("principlesGrid");
+  PRINCIPLES.forEach(p=>{
+    const linked=COMPONENTS.filter(c=>c.links.includes(p.id));
+    const card=el("div",{class:"card","data-pid":p.id});
+    card.innerHTML=`
+      <div class="tag">${p.id}</div>
+      <h4>${p.title}</h4>
+      <p>${p.desc}</p>
+      <div class="links">${linked.map(c=>`<span class="mini">${c.id} · ${c.title}</span>`).join("")}</div>`;
+    card.addEventListener("mouseenter",()=>highlightP(p.id,true));
+    card.addEventListener("mouseleave",()=>highlightP(p.id,false));
+    grid.appendChild(card);
+  });
+}
+
+function buildComponents(){
+  const grid=document.getElementById("componentsGrid");
+  COMPONENTS.forEach(c=>{
+    const card=el("div",{class:"card","data-cid":c.id});
+    card.innerHTML=`
+      <div class="tag">${c.id}</div>
+      <h4>${c.title}</h4>
+      <p>${c.desc}</p>
+      <div class="links">${c.links.map(l=>`<span class="mini purple">${l}</span>`).join("")}</div>`;
+    card.addEventListener("mouseenter",()=>highlightC(c.id,true));
+    card.addEventListener("mouseleave",()=>highlightC(c.id,false));
+    grid.appendChild(card);
+  });
+}
+
+function buildRoles(){
+  const grid=document.getElementById("rolesGrid");
+  ROLES.forEach(r=>{
+    grid.appendChild(el("div",{class:"card",html:`
+      <div class="tag">${r.id}</div>
+      <h4>${r.title}</h4>
+      <p>${r.desc}</p>`}));
+  });
+}
+
+function highlightP(pid, on){
+  d3.selectAll("[data-cid]").classed("active",false);
+  if(!on) return;
+  COMPONENTS.filter(c=>c.links.includes(pid)).forEach(c=>{
+    document.querySelector(`[data-cid="${c.id}"]`)?.classList.toggle("active",true);
+  });
+  /* graph */
+  d3.select("#pcgraph_svg svg").selectAll(".node").attr("opacity",d=>(d.id===pid||COMPONENTS.find(c=>c.id===d.id&&c.links.includes(pid)))?1:.18);
+  d3.select("#pcgraph_svg svg").selectAll(".link").attr("opacity",d=>d.source.id===pid?.9:.05);
+}
+function highlightC(cid, on){
+  d3.selectAll("[data-pid]").classed("active",false);
+  if(!on) return;
+  const c=COMPONENTS.find(x=>x.id===cid);
+  c.links.forEach(p=> document.querySelector(`[data-pid="${p}"]`)?.classList.toggle("active",true));
+  d3.select("#pcgraph_svg svg").selectAll(".node").attr("opacity",d=>(d.id===cid||c.links.includes(d.id))?1:.18);
+  d3.select("#pcgraph_svg svg").selectAll(".link").attr("opacity",d=>d.target.id===cid?.9:.05);
+}
+
+/* ================================================================
+   VENN diagram (D3)
+   ================================================================ */
+function drawVenn(){
+  const wrap=d3.select("#venn");
+  const W=wrap.node().clientWidth, H=380;
+  wrap.html("");
+  const svg=wrap.append("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("width","100%").attr("height",H);
+
+  const cx=W/2, cy=H/2-10, r=120;
+  const circles=[
+    {label:"Machine Learning", color:"#5eead4", x:cx-r*0.7, y:cy-r*0.3},
+    {label:"Software Engineering / DevOps", color:"#60a5fa", x:cx+r*0.7, y:cy-r*0.3},
+    {label:"Data Engineering", color:"#a78bfa", x:cx, y:cy+r*0.7},
+  ];
+
+  const g=svg.append("g");
+  g.selectAll("circle").data(circles).enter().append("circle")
+    .attr("cx",d=>d.x).attr("cy",d=>d.y).attr("r",r)
+    .attr("fill",d=>d.color).attr("fill-opacity",0.2)
+    .attr("stroke",d=>d.color).attr("stroke-width",1.5);
+
+  /* center MLOps badge */
+  svg.append("circle").attr("cx",cx).attr("cy",cy+r*0.07).attr("r",55)
+    .attr("fill",cssv("pink")).attr("fill-opacity",.18).attr("stroke",cssv("pink")).attr("stroke-width",1.5);
+  svg.append("text").attr("x",cx).attr("y",cy+r*0.07).attr("text-anchor","middle").attr("dy",4)
+    .attr("font-size",18).attr("font-weight",800).attr("fill",C.text()).text("MLOps");
+  svg.append("text").attr("x",cx).attr("y",cy+r*0.07+18).attr("text-anchor","middle")
+    .attr("font-size",10).attr("fill",cssv("pink")).text("(intersection)");
+
+  svg.append("text").attr("x",circles[0].x-30).attr("y",circles[0].y-r-8).attr("font-size",13).attr("fill",cssv("teal")).attr("font-weight",700).text("Machine Learning");
+  svg.append("text").attr("x",circles[1].x-60).attr("y",circles[1].y-r-8).attr("font-size",13).attr("fill",cssv("blue")).attr("font-weight",700).text("Software Eng. / DevOps");
+  svg.append("text").attr("x",circles[2].x-50).attr("y",circles[2].y+r+18).attr("font-size",13).attr("fill",cssv("purple")).attr("font-weight",700).text("Data Engineering");
+
+  /* sub-labels */
+  const pieces=[
+    {x:cx-r,   y:cy-r*0.3, t:"ML Model"},
+    {x:cx+r*0.95, y:cy-r*0.3, t:"DevOps · Pipeline · CI/CD"},
+    {x:cx,     y:cy+r*1.15, t:"Data"},
+    {x:cx-r*0.4, y:cy+r*0.4, t:"Pipelines + ML"},
+    {x:cx+r*0.4, y:cy+r*0.4, t:"CD4ML"},
+  ];
+  svg.selectAll(".pl").data(pieces).enter().append("text")
+    .attr("x",d=>d.x).attr("y",d=>d.y).attr("text-anchor","middle").attr("font-size",11).attr("fill",C.muted()).text(d=>d.t);
+}
+
+/* ================================================================
+   Force graph: principles ↔ components
+   ================================================================ */
+function drawPCGraph(){
+  const wrap=d3.select("#pcgraph_svg");
+  wrap.html("");
+  const W=wrap.node().clientWidth, H=480;
+  const svg=wrap.append("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("width","100%").attr("height",H);
+
+  const nodes=[
+    ...PRINCIPLES.map(p=>({id:p.id,kind:"P",label:p.title,desc:p.desc})),
+    ...COMPONENTS.map(c=>({id:c.id,kind:"C",label:c.title,desc:c.desc}))
+  ];
+  const links=[];
+  COMPONENTS.forEach(c=> c.links.forEach(p=> links.push({source:p,target:c.id})));
+
+  const sim=d3.forceSimulation(nodes)
+    .force("link",d3.forceLink(links).id(d=>d.id).distance(110).strength(.6))
+    .force("charge",d3.forceManyBody().strength(-260))
+    .force("center",d3.forceCenter(W/2,H/2))
+    .force("collide",d3.forceCollide().radius(38));
+
+  const link=svg.append("g").selectAll("line").data(links).enter().append("line")
+    .attr("class","link").attr("stroke",cssv("teal")).attr("stroke-opacity",.45).attr("stroke-width",1.2);
+
+  const node=svg.append("g").selectAll("g").data(nodes).enter().append("g")
+    .attr("class","node")
+    .call(d3.drag()
+      .on("start",(e,d)=>{if(!e.active) sim.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y;})
+      .on("drag",(e,d)=>{d.fx=e.x;d.fy=e.y;})
+      .on("end",(e,d)=>{if(!e.active) sim.alphaTarget(0);d.fx=null;d.fy=null;}));
+
+  node.append("circle")
+    .attr("r",d=>d.kind==="P"?22:26)
+    .attr("fill",d=>d.kind==="P"?cssv("purple"):cssv("teal"))
+    .attr("fill-opacity",.22)
+    .attr("stroke",d=>d.kind==="P"?cssv("purple"):cssv("teal"))
+    .attr("stroke-width",1.5);
+
+  node.append("text")
+    .attr("text-anchor","middle").attr("dy",4).attr("font-size",12).attr("font-weight",800)
+    .attr("fill",C.text()).text(d=>d.id);
+
+  node.append("text")
+    .attr("text-anchor","middle").attr("dy",d=>d.kind==="P"?38:42)
+    .attr("font-size",10).attr("fill",C.muted()).text(d=>d.label.length>22?d.label.slice(0,22)+"…":d.label);
+
+  node.on("mouseenter",(e,d)=> showTip(e, `<b>${d.id}</b> ${d.label}<br/><span style="color:#aab3d4">${d.desc}</span>`))
+      .on("mousemove",e=> moveTip(e))
+      .on("mouseleave",hideTip);
+
+  sim.on("tick",()=>{
+    link.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y).attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
+    node.attr("transform",d=>`translate(${d.x},${d.y})`);
+  });
+}
+
+/* ================================================================
+   Chord diagram: roles
+   ================================================================ */
+function drawChord(){
+  const wrap=d3.select("#chord_svg"); wrap.html("");
+  const W=wrap.node().clientWidth, H=460, R=Math.min(W,H)/2-50;
+  const svg=wrap.append("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("width","100%").attr("height",H);
+  const g=svg.append("g").attr("transform",`translate(${W/2},${H/2})`);
+
+  const ids=ROLES.map(r=>r.id);
+  const matrix=ids.map(a=> ids.map(b=> ROLE_OVERLAP[a][b] || 0.001));
+  const chord=d3.chord().padAngle(0.05).sortSubgroups(d3.descending);
+  const chords=chord(matrix);
+
+  const colors=[cssv("red"),cssv("orange"),cssv("yellow"),cssv("purple"),cssv("blue"),cssv("teal"),cssv("green")];
+  const arc=d3.arc().innerRadius(R).outerRadius(R+14);
+  const ribbon=d3.ribbon().radius(R);
+
+  g.append("g").selectAll("path").data(chords.groups).enter().append("path")
+    .attr("d",arc).attr("fill",(d,i)=>colors[i]).attr("stroke",C.pageStr()).attr("opacity",.9);
+
+  g.append("g").attr("fill-opacity",.55)
+    .selectAll("path").data(chords).enter().append("path")
+    .attr("d",ribbon)
+    .attr("fill",d=>colors[d.target.index])
+    .attr("stroke",C.pageStr())
+    .on("mouseenter",(e,d)=>{
+      const a=ROLES[d.source.index], b=ROLES[d.target.index];
+      showTip(e,`<b>${a.id} · ${a.title}</b> ↔ <b>${b.id} · ${b.title}</b><br/>Overlap: ${(ROLE_OVERLAP[a.id][b.id]*100).toFixed(0)}%`);
+    })
+    .on("mousemove",moveTip).on("mouseleave",hideTip);
+
+  /* labels */
+  g.append("g").selectAll("text").data(chords.groups).enter().append("text")
+    .each(d=>{d.angle=(d.startAngle+d.endAngle)/2;})
+    .attr("dy",".35em")
+    .attr("transform",d=>`rotate(${(d.angle*180/Math.PI-90)}) translate(${R+22}) ${d.angle>Math.PI?"rotate(180)":""}`)
+    .attr("text-anchor",d=>d.angle>Math.PI?"end":"start")
+    .attr("font-size",12).attr("fill",C.text()).attr("font-weight",700)
+    .text(d=>`${ROLES[d.index].id} · ${ROLES[d.index].title}`);
+}
+
+/* ================================================================
+   Workflow — full Figure-4 architecture (animated)
+   ================================================================ */
+const WF={i:-1, timer:null, speed:700};
+
+/* ---------- Architecture model: nodes ---------- */
+/* Each node has id, label, sublabel, x, y, w, h, zone, role icon, kind */
+const WF_NODES = (() => {
+  // Coordinates assume a 1200 × 760 viewBox.
+  const Z = {
+    A:{x:60,y:60,w:1100,h:120,color:"#fbbf24", title:"A · MLOps Project Initiation"},
+    B:{x:60,y:200,w:1100,h:200,color:"#a78bfa",title:"B · Data Engineering Zone (B1 Requirements + B2 Feature Engineering Pipeline)"},
+    C:{x:60,y:420,w:780, h:140,color:"#60a5fa",title:"C · ML Experimentation Zone"},
+    D:{x:60,y:580,w:1100,h:160,color:"#5eead4",title:"D · ML Production Zone (Automated ML Workflow Pipeline)"},
+  };
+  return {
+    zones:Z,
+    list:[
+      // Zone A — initiation (5 boxes)
+      {id:"A1", zone:"A", role:"BS", kind:"task", x:90,  y:100, w:140,h:60, label:"Business problem analysis",sub:"(define goal)"},
+      {id:"A2", zone:"A", role:"SA", kind:"task", x:250, y:100, w:140,h:60, label:"Design architecture",sub:"& technologies"},
+      {id:"A3", zone:"A", role:"DS", kind:"task", x:410, y:100, w:140,h:60, label:"Derive ML problem",sub:"(class. / regression)"},
+      {id:"A4", zone:"A", role:"DE+DS", kind:"task", x:570, y:100, w:170,h:60, label:"Understand required data",sub:"(available? where? how?)"},
+      {id:"A5", zone:"A", role:"DE+DS", kind:"task", x:760, y:100, w:170,h:60, label:"Connect to raw data",sub:"distribution / quality / validation"},
+
+      // Data sources column
+      {id:"DS_STREAM", zone:"B", role:"", kind:"src", x:80,  y:230, w:90,h:36, label:"streaming"},
+      {id:"DS_BATCH",  zone:"B", role:"", kind:"src", x:80,  y:270, w:90,h:36, label:"batch"},
+      {id:"DS_CLOUD",  zone:"B", role:"", kind:"src", x:80,  y:310, w:90,h:36, label:"cloud storage"},
+      {id:"DS_LABEL",  zone:"B", role:"", kind:"src", x:80,  y:350, w:90,h:36, label:"labeled data"},
+
+      // B1 requirements (2 boxes, top-right)
+      {id:"B1_T", zone:"B", role:"DE",    kind:"task", x:210, y:225, w:160,h:50, label:"Define transformation",sub:"& cleaning rules"},
+      {id:"B1_F", zone:"B", role:"DS+DE", kind:"task", x:390, y:225, w:160,h:50, label:"Define feature",sub:"engineering rules"},
+
+      // Rule artifacts
+      {id:"ART_TR", zone:"B", role:"", kind:"art", x:230, y:290, w:120,h:32, label:"transformation rules"},
+      {id:"ART_FR", zone:"B", role:"", kind:"art", x:410, y:290, w:120,h:32, label:"feature engineering rules"},
+
+      // B2 pipeline boxes
+      {id:"B2_1", zone:"B", role:"DE", kind:"task", x:200,y:340, w:120,h:48, label:"Connect to",sub:"raw data"},
+      {id:"B2_2", zone:"B", role:"DE", kind:"task", x:330,y:340, w:120,h:48, label:"Data extraction",sub:""},
+      {id:"B2_3", zone:"B", role:"DE", kind:"task", x:460,y:340, w:140,h:48, label:"Data transformation",sub:"& cleaning"},
+      {id:"B2_4", zone:"B", role:"DE", kind:"task", x:610,y:340, w:140,h:48, label:"Feature engineering",sub:"(new features)"},
+      {id:"B2_5", zone:"B", role:"DE+SE", kind:"task", x:760,y:340, w:140,h:48, label:"Data ingestion job",sub:"(batch / streaming)"},
+
+      // Feature store (left edge of zones C/D)
+      {id:"FS",      zone:"FS", role:"DE", kind:"store", x:80, y:430, w:130, h:120, label:"Feature Store System", sub:""},
+      {id:"FS_OFF",  zone:"FS", role:"",   kind:"sub",   x:90, y:460, w:110, h:32,  label:"offline DB",            sub:"(normal latency)"},
+      {id:"FS_ON",   zone:"FS", role:"",   kind:"sub",   x:90, y:500, w:110, h:32,  label:"online DB",             sub:"(low latency)"},
+
+      // C — experimentation (5 boxes)
+      {id:"C1", zone:"C", role:"DS", kind:"task", x:230,y:460, w:120,h:48, label:"Data analysis", sub:""},
+      {id:"C2", zone:"C", role:"DS", kind:"task", x:360,y:460, w:140,h:48, label:"Data preparation",sub:"& validation"},
+      {id:"C3", zone:"C", role:"DS", kind:"task", x:510,y:460, w:120,h:48, label:"Model training", sub:""},
+      {id:"C4", zone:"C", role:"DS", kind:"task", x:640,y:460, w:120,h:48, label:"Model validation", sub:""},
+      {id:"C5", zone:"C", role:"DS+SE", kind:"task", x:770,y:460, w:120,h:48, label:"Export model", sub:""},
+
+      // Repository + CI/CD on the right
+      {id:"REPO",  zone:"PROD", role:"", kind:"repo",  x:920, y:430, w:80, h:60, label:"Repository", sub:"(git)"},
+      {id:"ART_MTC",zone:"PROD",role:"", kind:"art",   x:1010,y:435, w:140,h:24, label:"model training code"},
+      {id:"ART_MOD",zone:"PROD",role:"", kind:"art",   x:1010,y:465, w:140,h:24, label:"ML model"},
+      {id:"ART_PIP",zone:"PROD",role:"", kind:"art",   x:1010,y:495, w:140,h:24, label:"workflow pipeline code"},
+      {id:"ART_SRV",zone:"PROD",role:"", kind:"art",   x:1010,y:525, w:140,h:24, label:"model serving code"},
+
+      {id:"CICD",  zone:"PROD", role:"DO+ML", kind:"cicd", x:1010, y:560, w:140, h:60, label:"CI/CD",
+         sub:"build · test · deliver · deploy"},
+
+      // Scheduler + orchestration
+      {id:"SCHED", zone:"D", role:"", kind:"sched", x:230, y:600, w:170, h:36, label:"Scheduler",
+         sub:"new data / event / periodic"},
+      {id:"ORCH",  zone:"D", role:"", kind:"orch",  x:410, y:600, w:200, h:36, label:"Workflow Orchestration",
+         sub:"+ ML metadata store"},
+
+      // Model registry
+      {id:"REG",   zone:"D", role:"", kind:"registry", x:870, y:610, w:130, h:54, label:"Model Registry",
+         sub:"status · params · metrics"},
+
+      // D — automated ML workflow boxes (6 steps)
+      {id:"D1", zone:"D", role:"ML", kind:"task", x:80,  y:660, w:120,h:46, label:"Data extraction", sub:""},
+      {id:"D2", zone:"D", role:"ML", kind:"task", x:210, y:660, w:130,h:46, label:"Data preparation",sub:"& validation"},
+      {id:"D3", zone:"D", role:"ML", kind:"task", x:350, y:660, w:140,h:46, label:"Model training",sub:"/ refinement"},
+      {id:"D4", zone:"D", role:"ML", kind:"task", x:500, y:660, w:130,h:46, label:"Model validation",sub:""},
+      {id:"D5", zone:"D", role:"ML", kind:"task", x:640, y:660, w:120,h:46, label:"Export model",sub:""},
+      {id:"D6", zone:"D", role:"ML", kind:"task", x:770, y:660, w:140,h:46, label:"Push to registry",sub:""},
+
+      // Production-ready model + serving + monitoring
+      {id:"PROD_MODEL", zone:"D", role:"DO+ML", kind:"art", x:1010,y:660, w:140,h:24, label:"prod-ready ML model"},
+      {id:"SERVE",      zone:"D", role:"ML",    kind:"serve", x:1010,y:690, w:140,h:48, label:"Model Serving",
+         sub:"online + batch inference"},
+      {id:"MON",        zone:"D", role:"ML+DO", kind:"mon",   x:640, y:710, w:240,h:36, label:"Monitoring component",
+         sub:"continuous monitoring of serving + infra"},
+    ]
+  };
+})();
+
+/* ---------- Edges (architecture flows) ---------- */
+const WF_EDGES=[
+  // Zone A linear chain
+  ["A1","A2","gen"],["A2","A3","gen"],["A3","A4","gen"],["A4","A5","gen"],
+
+  // Sources → B2_1
+  ["DS_STREAM","B2_1","data"],["DS_BATCH","B2_1","data"],["DS_CLOUD","B2_1","data"],["DS_LABEL","B2_1","data"],
+
+  // B1 produces rules → consumed in B2
+  ["B1_T","ART_TR","gen"],["B1_F","ART_FR","gen"],
+  ["ART_TR","B2_3","data"],["ART_FR","B2_4","data"],
+
+  // B2 chain
+  ["B2_1","B2_2","data"],["B2_2","B2_3","data"],["B2_3","B2_4","data"],["B2_4","B2_5","data"],
+
+  // Ingestion to feature store (offline + online)
+  ["B2_5","FS_OFF","data"],["B2_5","FS_ON","data"],
+
+  // Feature store to experimentation (versioned features)
+  ["FS_OFF","C1","feat"],["FS_OFF","C2","feat"],
+
+  // C chain
+  ["C1","C2","gen"],["C2","C3","gen"],["C3","C4","gen"],["C4","C5","gen"],
+
+  // Export → repository as artifacts
+  ["C5","REPO","gen"],["REPO","ART_MTC","gen"],["REPO","ART_MOD","gen"],["REPO","ART_PIP","gen"],["REPO","ART_SRV","gen"],
+
+  // CI/CD pulls from repo
+  ["ART_MTC","CICD","gen"],["ART_PIP","CICD","gen"],["ART_SRV","CICD","gen"],
+
+  // Scheduler triggers orchestration; orchestration controls D pipeline
+  ["SCHED","ORCH","gen"],["ORCH","D1","gen"],
+
+  // Feature store feeds D pipeline
+  ["FS_OFF","D1","feat"],["FS_ON","D1","feat"],
+
+  // D chain
+  ["D1","D2","gen"],["D2","D3","gen"],["D3","D4","gen"],["D4","D5","gen"],["D5","D6","gen"],
+
+  // D6 → registry → CI/CD → prod model → serving
+  ["D6","REG","gen"],["REG","CICD","gen"],["CICD","PROD_MODEL","gen"],["PROD_MODEL","SERVE","gen"],
+
+  // Serving uses online features
+  ["FS_ON","SERVE","feat"],
+
+  // Monitoring observes serving
+  ["SERVE","MON","gen"],
+
+  // Feedback loop: monitoring → scheduler & B1 (drift triggers retraining + feature requirements)
+  ["MON","SCHED","fb"],["MON","B1_F","fb"],["MON","C1","fb"],
+];
+
+/* ---------- Animation script: which edges activate at each numbered step ---------- */
+/* Each entry: {n, zone, label, edges:[...]} — a step is an animation phase */
+const WF_SCRIPT=[
+  {n:1,zone:"A",label:"Step 1 · Business stakeholder analyzes the problem and identifies an ML opportunity.",edges:[],focus:["A1"]},
+  {n:2,zone:"A",label:"Step 2 · Solution architect defines architecture and chooses technologies.",edges:[["A1","A2","gen"]],focus:["A2"]},
+  {n:3,zone:"A",label:"Step 3 · Data scientist derives the ML problem (regression / classification).",edges:[["A2","A3","gen"]],focus:["A3"]},
+  {n:4,zone:"A",label:"Step 4 · Data scientist + data engineer identify what data is required.",edges:[["A3","A4","gen"]],focus:["A4"]},
+  {n:5,zone:"A",label:"Step 5 · They locate raw data sources and run distribution / quality / validation checks.",edges:[["A4","A5","gen"]],focus:["A5"]},
+  {n:6,zone:"B",label:"Step 6 · Data engineer defines transformation &amp; cleaning rules.",edges:[],focus:["B1_T"]},
+  {n:7,zone:"B",label:"Step 7 · DS + DE define feature engineering rules; iterated via feedback.",edges:[],focus:["B1_F"]},
+  {n:8,zone:"B",label:"Step 8 · Define infra config for the feature engineering pipeline.",edges:[["B1_T","ART_TR","gen"],["B1_F","ART_FR","gen"]],focus:["ART_TR","ART_FR"]},
+  {n:9,zone:"B",label:"Step 9 · Pipeline connects to raw data (streaming / batch / cloud / labeled).",edges:[["DS_STREAM","B2_1","data"],["DS_BATCH","B2_1","data"],["DS_CLOUD","B2_1","data"],["DS_LABEL","B2_1","data"]],focus:["B2_1"]},
+  {n:10,zone:"B",label:"Step 10 · Data preprocessing — transformation &amp; cleaning (using the rules).",edges:[["B2_1","B2_2","data"],["B2_2","B2_3","data"],["ART_TR","B2_3","data"]],focus:["B2_3"]},
+  {n:11,zone:"B",label:"Step 11 · Compute new advanced features from existing ones.",edges:[["B2_3","B2_4","data"],["ART_FR","B2_4","data"]],focus:["B2_4"]},
+  {n:12,zone:"B",label:"Step 12 · Data ingestion job loads features into offline + online feature stores.",edges:[["B2_4","B2_5","data"],["B2_5","FS_OFF","data"],["B2_5","FS_ON","data"]],focus:["FS_OFF","FS_ON"]},
+  {n:13,zone:"C",label:"Step 13 · Data scientist connects to the feature store for analysis.",edges:[["FS_OFF","C1","feat"]],focus:["C1"]},
+  {n:14,zone:"C",label:"Step 14 · Train/test split + data validation.",edges:[["C1","C2","gen"]],focus:["C2"]},
+  {n:15,zone:"C",label:"Step 15 · Best-algorithm + hyperparameter search; iterative model training.",edges:[["C2","C3","gen"]],focus:["C3"]},
+  {n:16,zone:"C",label:"Step 16 · Several rounds of training + validation (model engineering).",edges:[["C3","C4","gen"]],focus:["C4"]},
+  {n:17,zone:"C",label:"Step 17 · Export the model and commit code to the repository.",edges:[["C4","C5","gen"],["C5","REPO","gen"],["REPO","ART_MTC","gen"],["REPO","ART_MOD","gen"],["REPO","ART_PIP","gen"],["REPO","ART_SRV","gen"]],focus:["REPO"]},
+  {n:18,zone:"D",label:"Step 18 · Automated extraction of versioned features from the feature store.",edges:[["SCHED","ORCH","gen"],["ORCH","D1","gen"],["FS_OFF","D1","feat"]],focus:["D1"]},
+  {n:19,zone:"D",label:"Step 19 · Automated data preparation, validation and split.",edges:[["D1","D2","gen"]],focus:["D2"]},
+  {n:20,zone:"D",label:"Step 20 · Automated final training on unseen versioned features.",edges:[["D2","D3","gen"]],focus:["D3"]},
+  {n:21,zone:"D",label:"Step 21 · Automated model evaluation + iterative HP tuning if needed.",edges:[["D3","D4","gen"]],focus:["D4"]},
+  {n:22,zone:"D",label:"Step 22 · Trained model exported and pushed to the model registry.",edges:[["D4","D5","gen"],["D5","D6","gen"],["D6","REG","gen"]],focus:["REG"]},
+  {n:23,zone:"D",label:"Step 23 · DevOps / ML engineer pulls model + serving code from the registry.",edges:[["REG","CICD","gen"],["ART_SRV","CICD","gen"]],focus:["CICD"]},
+  {n:24,zone:"D",label:"Step 24 · CI/CD continuous deployment of model and serving code.",edges:[["CICD","PROD_MODEL","gen"]],focus:["PROD_MODEL"]},
+  {n:25,zone:"D",label:"Step 25 · Model serving runs online (REST) or batch inference using online features.",edges:[["PROD_MODEL","SERVE","gen"],["FS_ON","SERVE","feat"]],focus:["SERVE"]},
+  {n:26,zone:"D",label:"Step 26 · Monitoring observes serving performance + infra in real time.",edges:[["SERVE","MON","gen"]],focus:["MON"]},
+  {n:27,zone:"D",label:"Step 27 · Feedback loop forwards alerts to scheduler / experiment / data-eng zone.",edges:[["MON","SCHED","fb"],["MON","C1","fb"],["MON","B1_F","fb"]],focus:["SCHED"]},
+  {n:28,zone:"D",label:"Step 28 · Drift detection triggers automated retraining (continuous training).",edges:[["SCHED","ORCH","gen"],["ORCH","D1","gen"]],focus:["D1"]},
+];
+
+const ZONE_TITLES = {
+  A:"A — Initiation",B:"B — Data Engineering",C:"C — Experimentation",D:"D — Production"
+};
+const EDGE_STYLE = {
+  gen:  {color:"#9fa9cc", dash:"none"},
+  data: {color:"#a78bfa", dash:"none"},
+  feat: {color:"#60a5fa", dash:"none"},
+  fb:   {color:"#f472b6", dash:"5,4"},
+};
+
+/* ---------- Utilities ---------- */
+function nodeById(id){return WF_NODES.list.find(n=>n.id===id);}
+function nodeAnchor(n, side){
+  // returns a point on the boundary of the node
+  const cx=n.x+n.w/2, cy=n.y+n.h/2;
+  if(side==="left")  return [n.x, cy];
+  if(side==="right") return [n.x+n.w, cy];
+  if(side==="top")   return [cx, n.y];
+  if(side==="bottom")return [cx, n.y+n.h];
+  return [cx, cy];
+}
+function bestAnchor(a,b){
+  // pick anchors based on relative positions
+  const ax=a.x+a.w/2, ay=a.y+a.h/2, bx=b.x+b.w/2, by=b.y+b.h/2;
+  const dx=bx-ax, dy=by-ay;
+  if(Math.abs(dx)>Math.abs(dy)){
+    return [nodeAnchor(a,dx>0?"right":"left"), nodeAnchor(b,dx>0?"left":"right")];
+  } else {
+    return [nodeAnchor(a,dy>0?"bottom":"top"), nodeAnchor(b,dy>0?"top":"bottom")];
+  }
+}
+function curvePath(p1,p2){
+  const [x1,y1]=p1,[x2,y2]=p2;
+  const dx=x2-x1, dy=y2-y1;
+  // gentle curve
+  const cx=(x1+x2)/2, cy=(y1+y2)/2;
+  const off=Math.min(40, Math.max(12, Math.hypot(dx,dy)*0.15));
+  const nx=-dy, ny=dx; // normal
+  const norm=Math.hypot(nx,ny)||1;
+  const mx=cx+(nx/norm)*off*0.2, my=cy+(ny/norm)*off*0.2;
+  return `M${x1},${y1} Q${mx},${my} ${x2},${y2}`;
+}
+
+/* ---------- Drawing ---------- */
+function drawWorkflow(){
+  const host=document.getElementById("wf_svg");
+  if(!host) return; // section now uses an iframe; nothing to draw inline
+  const wrap=d3.select("#wf_svg"); wrap.html("");
+  const W=1200, H=760;
+  const svg=wrap.append("svg")
+    .attr("viewBox",`0 0 ${W} ${H}`)
+    .attr("preserveAspectRatio","xMidYMid meet")
+    .attr("width","100%").attr("height",H)
+    .style("max-width","100%").style("height","auto").style("max-height","780px").style("display","block");
+
+  // arrowheads
+  const defs=svg.append("defs");
+  ["gen","data","feat","fb"].forEach(k=>{
+    defs.append("marker")
+      .attr("id",`arr_${k}`).attr("viewBox","0 0 10 10")
+      .attr("refX",9).attr("refY",5).attr("markerWidth",6).attr("markerHeight",6)
+      .attr("orient","auto-start-reverse")
+      .append("path").attr("d","M0,0 L10,5 L0,10 Z").attr("fill",EDGE_STYLE[k].color);
+  });
+
+  // ===== Zones =====
+  const zones=svg.append("g").attr("class","zones");
+  Object.entries(WF_NODES.zones).forEach(([k,z])=>{
+    const g=zones.append("g");
+    g.append("rect")
+      .attr("x",z.x).attr("y",z.y).attr("width",z.w).attr("height",z.h)
+      .attr("rx",10).attr("fill",z.color).attr("fill-opacity",.05)
+      .attr("stroke",z.color).attr("stroke-opacity",.45).attr("stroke-dasharray",k==="A"?"none":"4,4");
+    g.append("text").attr("x",z.x+12).attr("y",z.y+18)
+      .attr("font-size",12).attr("font-weight",800).attr("fill",z.color)
+      .text(z.title);
+  });
+
+  // ===== Edges (static base) =====
+  const edgeG=svg.append("g").attr("class","edges");
+  const edgeMap=new Map();
+  WF_EDGES.forEach(([a,b,k])=>{
+    const A=nodeById(a),B=nodeById(b);
+    if(!A||!B) return;
+    const [p1,p2]=bestAnchor(A,B);
+    const path=edgeG.append("path")
+      .attr("d",curvePath(p1,p2))
+      .attr("fill","none").attr("stroke",EDGE_STYLE[k].color)
+      .attr("stroke-width",1.2).attr("stroke-opacity",.18)
+      .attr("stroke-dasharray", EDGE_STYLE[k].dash==="none"?null:EDGE_STYLE[k].dash)
+      .attr("marker-end",`url(#arr_${k})`);
+    edgeMap.set(`${a}->${b}`, {path, kind:k, p1, p2});
+  });
+
+  // ===== Nodes =====
+  const nodeG=svg.append("g").attr("class","nodes");
+  const nodeMap=new Map();
+  const teal=cssv("teal"), blue=cssv("blue"), purple=cssv("purple"), pink=cssv("pink"), yellow=cssv("yellow");
+  WF_NODES.list.forEach(n=>{
+    const g=nodeG.append("g").attr("class","wf-node").attr("data-id",n.id)
+      .attr("transform",`translate(${n.x},${n.y})`);
+    let fill=C.nodeBg(), stroke=C.nodeStr(), strokeW=1.2;
+    if(n.kind==="store"){fill=`color-mix(in srgb, ${purple} 12%, ${C.nodeBg()})`; stroke=purple;}
+    if(n.kind==="sub")  {fill=`color-mix(in srgb, ${blue} 12%, ${C.nodeBg()})`; stroke=blue;}
+    if(n.kind==="src")  {fill=`color-mix(in srgb, ${purple} 6%, ${C.nodeBg()})`; stroke=`color-mix(in srgb, ${purple} 50%, ${C.nodeBg()})`;}
+    if(n.kind==="art")  {fill=cssv("surface-tint"); stroke=C.nodeStr();}
+    if(n.kind==="repo") {fill=`color-mix(in srgb, ${teal} 10%, ${C.nodeBg()})`; stroke=teal;}
+    if(n.kind==="cicd") {fill=`color-mix(in srgb, ${teal} 16%, ${C.nodeBg()})`; stroke=teal; strokeW=1.6;}
+    if(n.kind==="sched"){fill=`color-mix(in srgb, ${yellow} 14%, ${C.nodeBg()})`; stroke=yellow;}
+    if(n.kind==="orch") {fill=`color-mix(in srgb, ${blue} 16%, ${C.nodeBg()})`; stroke=blue; strokeW=1.6;}
+    if(n.kind==="registry"){fill=`color-mix(in srgb, ${blue} 12%, ${C.nodeBg()})`; stroke=blue;}
+    if(n.kind==="serve"){fill=`color-mix(in srgb, ${teal} 14%, ${C.nodeBg()})`; stroke=teal; strokeW=1.6;}
+    if(n.kind==="mon")  {fill=`color-mix(in srgb, ${pink} 12%, ${C.nodeBg()})`; stroke=pink;}
+
+    g.append("rect").attr("class","wf-rect")
+      .attr("width",n.w).attr("height",n.h).attr("rx", n.kind==="art"?6:8)
+      .attr("fill",fill).attr("stroke",stroke).attr("stroke-width",strokeW);
+
+    g.append("text")
+      .attr("x",n.w/2).attr("y", n.sub? n.h/2 - 2 : n.h/2 + 4)
+      .attr("text-anchor","middle").attr("font-size", n.kind==="art"?10:11)
+      .attr("font-weight", n.kind==="art"?500:700)
+      .attr("fill",C.text()).text(n.label);
+    if(n.sub){
+      g.append("text").attr("x",n.w/2).attr("y",n.h/2+12)
+        .attr("text-anchor","middle").attr("font-size",9.5).attr("fill",C.muted()).text(n.sub);
+    }
+    if(n.role){
+      g.append("text").attr("x",n.w-6).attr("y",-4)
+        .attr("text-anchor","end").attr("font-size",9).attr("fill",C.muted()).attr("font-style","italic")
+        .text(n.role);
+    }
+
+    g.on("mouseenter",(e)=> showTip(e,`<b>${n.label}</b>${n.sub?'<br/>'+n.sub:''}${n.role?'<br/><span style="color:#9fa9cc">role: '+n.role+'</span>':''}`))
+     .on("mousemove",moveTip).on("mouseleave",hideTip);
+
+    nodeMap.set(n.id,g);
+  });
+
+  // moving artifact (animated dot)
+  const artifact=svg.append("circle").attr("r",7).attr("fill",cssv("teal"))
+    .attr("stroke",C.nodeBg()).attr("stroke-width",2).attr("opacity",0).style("filter",`drop-shadow(0 0 6px ${cssv("teal")})`);
+
+  WF.svg=svg; WF.edgeMap=edgeMap; WF.nodeMap=nodeMap; WF.artifact=artifact;
+  WF.i=-1;
+  setWfStep(-1);
+}
+
+function clearActive(){
+  WF.svg.selectAll(".wf-rect").attr("filter",null).each(function(){
+    const e=d3.select(this);
+    if(!e.attr("data-base-stroke")){ e.attr("data-base-stroke",e.attr("stroke")); e.attr("data-base-w",e.attr("stroke-width")); }
+    e.attr("stroke",e.attr("data-base-stroke")).attr("stroke-width",e.attr("data-base-w"));
+  });
+  WF.edgeMap.forEach(({path,kind})=>{
+    path.attr("stroke-opacity",.18).attr("stroke-width",1.2);
+  });
+}
+
+function setWfStep(i){
+  if(!WF.svg) return;
+  WF.i=Math.max(-1, Math.min(WF_SCRIPT.length-1, i));
+  document.getElementById("wf_step_label").textContent = `${Math.max(0,WF.i+1)}/${WF_SCRIPT.length}`;
+
+  if(WF.i<0){
+    document.getElementById("wf_stage").textContent = "—";
+    document.getElementById("wf_caption").innerHTML = "<b>Step 0</b> · Press Play to begin.";
+    clearActive();
+    WF.artifact.attr("opacity",0);
+    return;
+  }
+
+  const step=WF_SCRIPT[WF.i];
+  document.getElementById("wf_stage").textContent = ZONE_TITLES[step.zone] || "—";
+  document.getElementById("wf_caption").innerHTML = `<b>${step.label.split("·")[0].trim()}</b> · ${step.label.split("·").slice(1).join("·").trim()}`;
+
+  clearActive();
+
+  // Highlight focused nodes
+  (step.focus||[]).forEach(id=>{
+    const g=WF.nodeMap.get(id); if(!g) return;
+    const r=g.select(".wf-rect");
+    r.attr("stroke",cssv("teal")).attr("stroke-width",2.4).attr("filter",`drop-shadow(0 0 6px ${cssv("teal")})`);
+  });
+
+  // Highlight edges (and animate artifact along the last one)
+  const edges=step.edges||[];
+  edges.forEach(([a,b,k])=>{
+    const e=WF.edgeMap.get(`${a}->${b}`); if(!e) return;
+    e.path.attr("stroke-opacity",.95).attr("stroke-width",2.4);
+  });
+
+  // Animate artifact along the path of the last edge in the step (or to focus node)
+  const last = edges[edges.length-1];
+  const dur = WF.speed*0.85;
+  if(last){
+    const e=WF.edgeMap.get(`${last[0]}->${last[1]}`);
+    if(e){
+      const node=e.path.node();
+      const len=node.getTotalLength();
+      WF.artifact.attr("opacity",1)
+        .interrupt()
+        .transition().duration(dur).ease(d3.easeCubicInOut)
+        .attrTween("transform",()=> t=>{
+          const p=node.getPointAtLength(t*len);
+          return `translate(${p.x},${p.y})`;
+        });
+    }
+  } else if(step.focus && step.focus.length){
+    const n=nodeById(step.focus[0]);
+    if(n){
+      WF.artifact.attr("opacity",1).transition().duration(dur)
+        .attr("transform",`translate(${n.x+n.w/2},${n.y+n.h/2})`);
+    }
+  }
+}
+
+function wfPlay(){
+  if(WF.timer) return;
+  if(WF.i>=WF_SCRIPT.length-1) WF.i=-1;
+  WF.timer=setInterval(()=>{
+    if(WF.i>=WF_SCRIPT.length-1){clearInterval(WF.timer); WF.timer=null; return;}
+    setWfStep(WF.i+1);
+  }, WF.speed);
+}
+function wfPause(){if(WF.timer){clearInterval(WF.timer); WF.timer=null;}}
+function wfStep(){wfPause(); setWfStep(WF.i+1);}
+function wfBack(){wfPause(); setWfStep(WF.i-1);}
+function wfReset(){wfPause(); setWfStep(-1);}
+
+/* ================================================================
+   Sankey
+   ================================================================ */
+function drawSankey(){
+  const wrap=d3.select("#sankey_svg"); wrap.html("");
+  const W=wrap.node().clientWidth, H=420;
+  const svg=wrap.append("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("width","100%").attr("height",H);
+
+  const nodeIdx=Object.fromEntries(SANKEY.nodes.map((n,i)=>[n.name,i]));
+  const data={
+    nodes: SANKEY.nodes.map(n=>({...n})),
+    links: SANKEY.links.map(l=>({source:nodeIdx[l.source], target:nodeIdx[l.target], value:l.value}))
+  };
+
+  const sk=d3.sankey().nodeWidth(14).nodePadding(12).extent([[10,10],[W-10,H-10]]);
+  sk(data);
+
+  const palette=[cssv("teal"),cssv("purple"),cssv("purple"),cssv("blue"),cssv("blue"),cssv("blue"),cssv("yellow"),cssv("teal"),cssv("red"),cssv("purple"),cssv("blue"),cssv("pink")];
+
+  svg.append("g").selectAll("rect").data(data.nodes).enter().append("rect")
+    .attr("x",d=>d.x0).attr("y",d=>d.y0).attr("width",d=>d.x1-d.x0).attr("height",d=>Math.max(1,d.y1-d.y0))
+    .attr("fill",(d,i)=>palette[i%palette.length]).attr("opacity",.9)
+    .append("title").text(d=>d.name);
+
+  svg.append("g").attr("fill","none").selectAll("path").data(data.links).enter().append("path")
+    .attr("d",d3.sankeyLinkHorizontal())
+    .attr("stroke",(d,i)=>palette[d.source.index%palette.length])
+    .attr("stroke-opacity",.45).attr("stroke-width",d=>Math.max(1,d.width))
+    .append("title").text(d=>`${d.source.name} → ${d.target.name}`);
+
+  svg.append("g").selectAll("text").data(data.nodes).enter().append("text")
+    .attr("x",d=>d.x0<W/2?d.x1+6:d.x0-6).attr("y",d=>(d.y0+d.y1)/2).attr("dy",".35em")
+    .attr("text-anchor",d=>d.x0<W/2?"start":"end")
+    .attr("font-size",11).attr("font-weight",600).attr("fill",C.text()).text(d=>d.name);
+}
+
+/* ================================================================
+   Roles × Stages heatmap
+   ================================================================ */
+function drawHeatmap(){
+  const wrap=d3.select("#heatmap_svg"); wrap.html("");
+  const W=wrap.node().clientWidth, H=320;
+  const svg=wrap.append("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("width","100%").attr("height",H);
+  const margin={top:50,left:160,right:20,bottom:30};
+  const gw=W-margin.left-margin.right, gh=H-margin.top-margin.bottom;
+
+  const x=d3.scaleBand().domain(RS_STAGES).range([0,gw]).padding(.06);
+  const y=d3.scaleBand().domain(ROLES.map(r=>r.id+" · "+r.title)).range([0,gh]).padding(.06);
+  const c=d3.scaleSequential(d3.interpolateViridis).domain([0,3]);
+
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  g.append("g").selectAll("text").data(RS_STAGES).enter().append("text")
+    .attr("x",d=>x(d)+x.bandwidth()/2).attr("y",-12).attr("text-anchor","middle").attr("font-size",11).attr("font-weight",600).attr("fill",C.text()).text(d=>d);
+  g.append("g").selectAll("text").data(ROLES.map(r=>r.id+" · "+r.title)).enter().append("text")
+    .attr("x",-8).attr("y",d=>y(d)+y.bandwidth()/2+4).attr("text-anchor","end").attr("font-size",11).attr("font-weight",600).attr("fill",C.text()).text(d=>d);
+
+  RS_MATRIX.forEach((row,ri)=> row.forEach((v,ci)=>{
+    g.append("rect").attr("class","hm-cell")
+      .attr("x",x(RS_STAGES[ci])).attr("y",y(ROLES[ri].id+" · "+ROLES[ri].title))
+      .attr("width",x.bandwidth()).attr("height",y.bandwidth())
+      .attr("fill",c(v)).attr("fill-opacity",.9)
+      .on("mouseenter",function(e){
+        const lvl=["–","supporting","contributing","primary"][v];
+        showTip(e,`<b>${ROLES[ri].id} · ${ROLES[ri].title}</b><br/>${RS_STAGES[ci]}<br/>Role: <b>${lvl}</b>`);
+      }).on("mousemove",moveTip).on("mouseleave",hideTip);
+    if(v>0){
+      g.append("text").attr("x",x(RS_STAGES[ci])+x.bandwidth()/2)
+        .attr("y",y(ROLES[ri].id+" · "+ROLES[ri].title)+y.bandwidth()/2+4)
+        .attr("text-anchor","middle").attr("font-size",11).attr("fill","#fff").attr("font-weight",700)
+        .text(["","◔","◑","●"][v]);
+    }
+  }));
+
+  /* color legend */
+  const lg=svg.append("g").attr("transform",`translate(${margin.left},${H-12})`);
+  ["–","supporting","contributing","primary"].forEach((lab,i)=>{
+    lg.append("rect").attr("x",i*120).attr("y",-10).attr("width",14).attr("height",10).attr("fill",c(i)).attr("fill-opacity",.9);
+    lg.append("text").attr("x",i*120+18).attr("y",-1).attr("font-size",11).attr("fill",C.text()).text(lab);
+  });
+}
+
+/* ================================================================
+   Scenarios + Maturity simulator + Radar
+   ================================================================ */
+const SCENARIOS={
+  bad:{
+    title:"Bad adoption", color:"#fb7185", emoji:"🚧",
+    summary:"A single data scientist on a laptop. Models deploy as Jupyter notebooks copy-pasted into a Flask app. No CI. No registry. Nobody knows which data trained what.",
+    smells:[
+      "Data lives on someone's laptop / random S3 bucket",
+      "Model is a .pkl emailed to ops",
+      "Re-running training next month produces a different model",
+      "Code review skipped 'because it's just ML'",
+      "No monitoring beyond CPU graphs",
+      "Nobody owns retraining"
+    ],
+    p:{P1:0,P2:0,P3:0,P4:0,P5:0,P6:0,P7:0,P8:0,P9:0},
+    test:{D:[0,0,0,0,0,0,0],M:[0.5,0,0.5,0,0,0,0],I:[0,0,0,0,0,0,0],O:[0,0,0,0,0,0,0]},
+    /* sums per category: D=0, M=1, I=0, O=0 → MIN=0 */
+  },
+  good:{
+    title:"Good adoption", color:"#60a5fa", emoji:"📈",
+    summary:"A small ML platform team has wired up CI/CD, an orchestrator, a registry, and a feature store. Most pipelines run on a schedule. Monitoring is dashboard-first; alerts cover obvious regressions.",
+    smells:[
+      "CI on every commit; tests gate deploys",
+      "Versioned datasets via DVC / Delta",
+      "Airflow or Kubeflow runs daily training",
+      "Model registry is the source of truth",
+      "Data validation schema + drift checks",
+      "Canary release for critical models"
+    ],
+    p:{P1:2,P2:2,P3:1,P4:1,P5:1,P6:1,P7:1,P8:1,P9:1},
+    test:{D:[1,0.5,0.5,0.5,1,1,1],M:[1,0.5,1,0.5,0.5,0.5,0],I:[0.5,0.5,0.5,1,0.5,0.5,1],O:[0.5,1,0.5,0.5,0.5,0.5,0.5]},
+    /* sums: D=5.5, M=4, I=4.5, O=4 → MIN=4 */
+  },
+  excellent:{
+    title:"Excellent adoption", color:"#5eead4", emoji:"🏆",
+    summary:"A platform-as-product approach. Self-service feature store, automated retraining, A/B testing, fairness slicing, end-to-end lineage, mission-critical SLOs, blameless incident reviews.",
+    smells:[
+      "Self-service onboarding for new ML use-cases",
+      "Lineage from prediction back to row of raw data",
+      "A/B + interleaving for online metric correlation",
+      "Per-slice model quality dashboards",
+      "Auto-rollback on prediction-quality regression",
+      "Fairness, privacy, and cost gates in CI"
+    ],
+    p:{P1:2,P2:2,P3:2,P4:2,P5:2,P6:2,P7:2,P8:2,P9:2},
+    test:{D:[1,1,1,1,1,1,1],M:[1,1,1,1,1,1,1],I:[1,1,1,1,1,1,1],O:[1,1,1,1,1,1,1]},
+  }
+};
+
+function buildScenarios(){
+  const wrap=document.getElementById("scenarios");
+  Object.entries(SCENARIOS).forEach(([k,s])=>{
+    const cls = k==="bad"?"bad":k==="good"?"good":"exc";
+    const div=el("div",{class:"scenario "+cls});
+    div.innerHTML=`
+      <h4><span style="font-size:18px">${s.emoji}</span> ${s.title} <span class="tag">${k.toUpperCase()}</span></h4>
+      <p>${s.summary}</p>
+      <ul>${s.smells.map(x=>`<li>${x}</li>`).join("")}</ul>
+      <div class="footer">
+        <button class="btn ${cls==="exc"?"excellent":cls}" data-scenario="${k}">Load profile</button>
+        <span class="chip" data-mini-score="${k}"></span>
+      </div>`;
+    wrap.appendChild(div);
+  });
+  document.querySelectorAll("[data-scenario]").forEach(b=>{
+    b.addEventListener("click",()=> applyScenario(b.dataset.scenario));
+  });
+  /* show ML Test Score sums per scenario */
+  Object.entries(SCENARIOS).forEach(([k,s])=>{
+    const sums=Object.values(s.test).map(arr=>arr.reduce((a,b)=>a+b,0));
+    const min=Math.min(...sums);
+    const t=tierFor(min);
+    document.querySelector(`[data-mini-score="${k}"]`).innerHTML=
+      `<b>Test Score</b> ${min.toFixed(1)} · ${t.emoji} ${t.name}`;
+  });
+}
+
+/* Maturity sliders */
+function buildMaturity(){
+  const wrap=document.getElementById("maturity_sliders");
+  PRINCIPLES.forEach(p=>{
+    const row=el("div",{class:"ctrl"});
+    row.innerHTML=`
+      <label><span><b>${p.id}</b> ${p.title}</span><b id="m_${p.id}_v">0</b></label>
+      <input type="range" min="0" max="2" step="1" value="0" id="m_${p.id}">`;
+    wrap.appendChild(row);
+    row.querySelector("input").addEventListener("input",updateMaturity);
+  });
+  document.querySelectorAll("[data-preset]").forEach(b=>{
+    b.addEventListener("click",()=>applyScenario(b.dataset.preset));
+  });
+}
+
+function applyScenario(key){
+  const s = key==="zero" ? {p:{}} : SCENARIOS[key];
+  PRINCIPLES.forEach(p=>{
+    const v = key==="zero" ? 0 : (s.p[p.id]??0);
+    const inp=document.getElementById("m_"+p.id);
+    if(inp){inp.value=v; document.getElementById("m_"+p.id+"_v").textContent=v;}
+  });
+  /* also push into ML Test Score */
+  if(key && key!=="zero" && SCENARIOS[key]){
+    const t = SCENARIOS[key].test;
+    Object.entries({data:"D",model:"M",infra:"I",monitor:"O"}).forEach(([cat,letter])=>{
+      ML_TESTS[cat].items.forEach((it,i)=>{
+        TS_STATE[it.k] = t[letter][i];
+      });
+    });
+    renderTestRubric();
+  } else if(key==="zero"){
+    Object.keys(TS_STATE).forEach(k=> TS_STATE[k]=0);
+    renderTestRubric();
+  }
+  updateMaturity();
+}
+
+function updateMaturity(){
+  const vals = PRINCIPLES.map(p=>{
+    const v = +document.getElementById("m_"+p.id).value;
+    document.getElementById("m_"+p.id+"_v").textContent = v;
+    return v;
+  });
+  const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+  document.getElementById("maturity_idx").textContent = `${avg.toFixed(2)} / 2.00`;
+  drawRadar(vals);
+}
+
+function drawRadar(vals){
+  const wrap=d3.select("#radar_svg"); wrap.html("");
+  const W=wrap.node().clientWidth, H=380, cx=W/2, cy=H/2-6, R=Math.min(W,H)/2-50;
+  const svg=wrap.append("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("width","100%").attr("height",H);
+  const N=PRINCIPLES.length;
+
+  const angle=i=> -Math.PI/2 + i*2*Math.PI/N;
+  const point=(i,v)=> [cx+Math.cos(angle(i))*R*v/2, cy+Math.sin(angle(i))*R*v/2];
+
+  /* rings */
+  [0.5,1,1.5,2].forEach(r=>{
+    svg.append("circle").attr("cx",cx).attr("cy",cy).attr("r",R*r/2)
+      .attr("fill","none").attr("stroke",C.grid());
+  });
+  /* axes */
+  PRINCIPLES.forEach((p,i)=>{
+    const [x,y]=point(i,2);
+    svg.append("line").attr("x1",cx).attr("y1",cy).attr("x2",x).attr("y2",y)
+      .attr("stroke",C.grid());
+    const [lx,ly]=[cx+Math.cos(angle(i))*(R+18), cy+Math.sin(angle(i))*(R+18)];
+    svg.append("text").attr("x",lx).attr("y",ly).attr("text-anchor","middle").attr("dy",4)
+      .attr("font-size",11).attr("fill",C.text()).attr("font-weight",700).text(p.id);
+  });
+
+  const pts=vals.map((v,i)=>point(i,v));
+  const pathD = "M"+pts.map(p=>p.join(",")).join("L")+"Z";
+  svg.append("path").attr("d",pathD)
+    .attr("fill",cssv("teal")).attr("fill-opacity",.22).attr("stroke",cssv("teal")).attr("stroke-width",1.8);
+  pts.forEach((p,i)=>{
+    svg.append("circle").attr("cx",p[0]).attr("cy",p[1]).attr("r",3.5)
+      .attr("fill",C.nodeBg()).attr("stroke",cssv("teal")).attr("stroke-width",1.8);
+  });
+}
+
+/* ================================================================
+   ML Test Score rubric calculator
+   ================================================================ */
+const TS_STATE={};
+function initTS(){
+  Object.values(ML_TESTS).forEach(cat=> cat.items.forEach(it=> TS_STATE[it.k]=0));
+}
+function renderTestRubric(){
+  const grid=document.getElementById("ts_grid"); grid.innerHTML="";
+  Object.entries(ML_TESTS).forEach(([key,cat])=>{
+    const sum = cat.items.reduce((a,it)=> a + (TS_STATE[it.k]||0), 0);
+    const wrap=el("div",{class:"score-cat"});
+    wrap.innerHTML=`<h4><span>${cat.label}</span><span class="total" id="cat_total_${key}">${sum.toFixed(1)} / 7</span></h4>`;
+    cat.items.forEach(it=>{
+      const v=TS_STATE[it.k];
+      const row=el("div",{class:"test-row"});
+      row.innerHTML=`
+        <div class="name"><b>${it.k}</b> · ${it.t}<small>${it.h}</small></div>
+        <div class="tri" data-test="${it.k}">
+          <button class="${v===0?'on0':''}" data-v="0">0</button>
+          <button class="${v===0.5?'on1':''}" data-v="0.5">½</button>
+          <button class="${v===1?'on2':''}" data-v="1">1</button>
+        </div>`;
+      wrap.appendChild(row);
+    });
+    grid.appendChild(wrap);
+  });
+  document.querySelectorAll(".tri").forEach(t=>{
+    t.querySelectorAll("button").forEach(b=>{
+      b.addEventListener("click",()=>{
+        const k=t.dataset.test, v=parseFloat(b.dataset.v);
+        TS_STATE[k]=v;
+        renderTestRubric();
+        updateScoreUI();
+      });
+    });
+  });
+  updateScoreUI();
+}
+
+function categoryScores(){
+  const out={};
+  Object.entries(ML_TESTS).forEach(([key,cat])=>{
+    out[key]= cat.items.reduce((a,it)=> a+(TS_STATE[it.k]||0), 0);
+  });
+  return out;
+}
+function updateScoreUI(){
+  const cats=categoryScores();
+  const sum=Object.values(cats).reduce((a,b)=>a+b,0);
+  const min=Math.min(...Object.values(cats));
+  document.getElementById("ts_sum").textContent=sum.toFixed(1);
+  document.getElementById("ts_final").innerHTML=`${min.toFixed(1)}<span class="lo"> / 7</span>`;
+  const t=tierFor(min);
+  document.getElementById("ts_tier_name").textContent=t.name;
+  document.getElementById("ts_tier_desc").textContent=t.desc;
+  document.getElementById("ts_tier_emoji").textContent=t.emoji;
+  document.getElementById("ts_meter").style.width = Math.min(100, (min/7)*100) + "%";
+  drawTSBars(cats);
+  buildTierTable(min);
+}
+
+function drawTSBars(cats){
+  const wrap=d3.select("#ts_bars_svg"); wrap.html("");
+  const W=wrap.node().clientWidth, H=210;
+  const svg=wrap.append("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("width","100%").attr("height",H);
+  /* color map for categories — teal/blue/purple/yellow translated through CSS vars */
+  const catColor={data:cssv("purple"),model:cssv("blue"),infra:cssv("teal"),monitor:cssv("yellow")};
+  const data=Object.entries(cats).map(([k,v])=>({k,v,label:ML_TESTS[k].label.replace("&amp;","&"),color:catColor[k]||ML_TESTS[k].color}));
+  const x=d3.scaleBand().domain(data.map(d=>d.k)).range([60,W-20]).padding(.3);
+  const y=d3.scaleLinear().domain([0,7]).range([H-30,18]);
+  svg.append("g").attr("transform",`translate(0,${H-30})`)
+    .selectAll("text").data(data).enter().append("text")
+    .attr("x",d=>x(d.k)+x.bandwidth()/2).attr("y",18).attr("text-anchor","middle").attr("fill",C.text()).attr("font-size",11).attr("font-weight",600).text(d=>d.label);
+  /* gridlines */
+  [0,1,2,3,4,5,6,7].forEach(g=>{
+    svg.append("line").attr("x1",60).attr("x2",W-20).attr("y1",y(g)).attr("y2",y(g)).attr("stroke",C.grid());
+    svg.append("text").attr("x",54).attr("y",y(g)+4).attr("text-anchor","end").attr("font-size",10).attr("fill",C.muted()).text(g);
+  });
+  svg.append("g").selectAll("rect").data(data).enter().append("rect")
+    .attr("x",d=>x(d.k)).attr("width",x.bandwidth())
+    .attr("y",d=>y(d.v)).attr("height",d=>(H-30)-y(d.v))
+    .attr("fill",d=>d.color).attr("opacity",.9).attr("rx",3);
+  svg.append("g").selectAll("text").data(data).enter().append("text")
+    .attr("x",d=>x(d.k)+x.bandwidth()/2).attr("y",d=>y(d.v)-6).attr("text-anchor","middle").attr("font-size",11).attr("fill",C.text()).attr("font-weight",700)
+    .text(d=>d.v.toFixed(1));
+  const min=d3.min(data,d=>d.v);
+  svg.append("line").attr("x1",60).attr("x2",W-20).attr("y1",y(min)).attr("y2",y(min)).attr("stroke",cssv("red")).attr("stroke-dasharray","4,4");
+  svg.append("text").attr("x",W-22).attr("y",y(min)-4).attr("text-anchor","end").attr("font-size",10).attr("fill",cssv("red")).attr("font-weight",700).text(`MIN = ${min.toFixed(1)}`);
+}
+
+function buildTierTable(currentMin){
+  const tb=document.querySelector("#tier_table tbody"); tb.innerHTML="";
+  const ROW=[
+    {r:"= 0",         t:TIERS[0]},
+    {r:"(0, 1]",      t:TIERS[1]},
+    {r:"(1, 2]",      t:TIERS[2]},
+    {r:"(2, 3]",      t:TIERS[3]},
+    {r:"(3, 5]",      t:TIERS[4]},
+    {r:"> 5",         t:TIERS[5]},
+  ];
+  const active = tierFor(currentMin);
+  ROW.forEach(row=>{
+    const tr=el("tr");
+    const isActive = row.t.name===active.name;
+    tr.innerHTML=`<td><span class="kbd">${row.r}</span></td>
+      <td><b style="color:${row.t.color}">${row.t.emoji} ${row.t.name}</b><br/><span style="color:var(--muted)">${row.t.desc}</span></td>
+      <td>${isActive?'<span class="mini" style="background:rgba(13,148,136,.14);color:#0f766e;border-color:rgba(13,148,136,.45);font-weight:700">YOU</span>':''}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* presets for ML Test Score buttons */
+function tsPreset(key){applyScenario(key);}
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("ts_bad").addEventListener("click",()=>tsPreset("bad"));
+  document.getElementById("ts_good").addEventListener("click",()=>tsPreset("good"));
+  document.getElementById("ts_exc").addEventListener("click",()=>tsPreset("excellent"));
+  document.getElementById("ts_reset").addEventListener("click",()=>tsPreset("zero"));
+});
+
+/* ================================================================
+   Drift / Monitoring simulator
+   ================================================================ */
+const DRIFT={t:0, hist:[], alerts:new Set(), timer:null};
+function drawDrift(){
+  const wrap=d3.select("#drift_svg"); wrap.html("");
+  const W=wrap.node().clientWidth, H=320;
+  const svg=wrap.append("svg").attr("viewBox",`0 0 ${W} ${H}`).attr("width","100%").attr("height",H);
+  const margin={top:10,right:24,bottom:30,left:48};
+  const gw=W-margin.left-margin.right, gh=H-margin.top-margin.bottom;
+
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  /* axes */
+  const x=d3.scaleLinear().domain([0,120]).range([0,gw]);
+  const y=d3.scaleLinear().domain([0,1]).range([gh,0]);
+  g.append("g").attr("transform",`translate(0,${gh})`).call(d3.axisBottom(x).ticks(6)).attr("color",C.muted());
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(".1f"))).attr("color",C.muted());
+
+  /* warn zone */
+  g.append("rect").attr("x",0).attr("y",y(0.7)).attr("width",gw).attr("height",y(0.5)-y(0.7)).attr("fill",cssv("yellow")).attr("opacity",.10);
+  g.append("rect").attr("x",0).attr("y",y(0.5)).attr("width",gw).attr("height",y(0)-y(0.5)).attr("fill",cssv("red")).attr("opacity",.10);
+  g.append("line").attr("x1",0).attr("x2",gw).attr("y1",y(0.7)).attr("y2",y(0.7)).attr("stroke",cssv("yellow")).attr("stroke-dasharray","3,3").attr("opacity",.55);
+  g.append("line").attr("x1",0).attr("x2",gw).attr("y1",y(0.5)).attr("y2",y(0.5)).attr("stroke",cssv("red")).attr("stroke-dasharray","3,3").attr("opacity",.55);
+
+  const series=[
+    {key:"quality", color:cssv("teal"),   label:"prediction quality"},
+    {key:"drift",   color:cssv("red"),    label:"data drift score"},
+    {key:"skew",    color:cssv("yellow"), label:"train/serve skew"},
+    {key:"latency", color:cssv("purple"), label:"latency (norm.)"}
+  ];
+  const paths={};
+  series.forEach(s=>{
+    paths[s.key]=g.append("path").attr("fill","none").attr("stroke",s.color).attr("stroke-width",1.8).attr("opacity",.95);
+  });
+
+  /* legend */
+  const lg=g.append("g").attr("transform",`translate(0,-2)`);
+  series.forEach((s,i)=>{
+    lg.append("rect").attr("x",i*150).attr("y",-10).attr("width",10).attr("height",10).attr("fill",s.color);
+    lg.append("text").attr("x",i*150+14).attr("y",-1).attr("font-size",11).attr("fill",C.text()).text(s.label);
+  });
+
+  DRIFT.svg=svg; DRIFT.x=x; DRIFT.y=y; DRIFT.paths=paths; DRIFT.gw=gw; DRIFT.gh=gh; DRIFT.g=g;
+
+  const lineGen=key=> d3.line().x((d,i)=>x(i)).y(d=>y(d[key])).curve(d3.curveMonotoneX);
+  DRIFT.lineGen=lineGen;
+
+  if(!DRIFT.timer){
+    DRIFT.timer=setInterval(driftTick,250);
+  }
+}
+function driftTick(){
+  const cov=+document.getElementById("d_cov").value;
+  const con=+document.getElementById("d_con").value;
+  const skew=+document.getElementById("d_skew").value;
+  const age=+document.getElementById("d_age").value;
+  document.getElementById("d_cov_v").textContent=cov.toFixed(2);
+  document.getElementById("d_con_v").textContent=con.toFixed(2);
+  document.getElementById("d_skew_v").textContent=skew.toFixed(2);
+  document.getElementById("d_age_v").textContent=age;
+
+  DRIFT.t+=1;
+  /* synthesize signals */
+  const noise=()=> (Math.random()-0.5)*0.04;
+  const driftScore = Math.min(1, cov*0.7 + con*0.3 + Math.random()*0.04);
+  const skewScore  = Math.min(1, skew + noise());
+  const stale      = Math.min(0.6, age/600);
+  const quality    = Math.max(0, 0.95 - cov*0.45 - con*0.55 - skew*0.25 - stale + noise());
+  const latency    = Math.min(1, 0.2 + skew*0.4 + cov*0.2 + Math.random()*0.05);
+
+  DRIFT.hist.push({quality,drift:driftScore,skew:skewScore,latency});
+  if(DRIFT.hist.length>120) DRIFT.hist.shift();
+
+  Object.entries(DRIFT.paths).forEach(([key,p])=> p.attr("d",DRIFT.lineGen(key)(DRIFT.hist)));
+
+  /* alerts */
+  const alerts=new Set();
+  if(driftScore>0.5) alerts.add("Monitor 2 · data invariants violated");
+  if(skewScore>0.5)  alerts.add("Monitor 3 · training/serving skew");
+  if(stale>0.3)      alerts.add("Monitor 4 · model is too stale");
+  if(quality<0.5)    alerts.add("Monitor 7 · prediction quality regressed");
+  if(latency>0.7)    alerts.add("Monitor 6 · compute performance regressed");
+  renderAlerts(alerts);
+}
+function renderAlerts(set){
+  const wrap=document.getElementById("drift_alerts"); wrap.innerHTML="";
+  if(set.size===0){
+    wrap.innerHTML='<span class="chip" style="border-color:rgba(52,211,153,.4);color:#bff5dc"><b>✓</b> All systems nominal</span>';
+    return;
+  }
+  set.forEach(a=>{
+    wrap.appendChild(el("span",{class:"chip",style:"border-color:rgba(251,113,133,.4);color:#ffd1d8",html:`<b>⚠</b> ${a}`}));
+  });
+}
+
+/* ================================================================
+   Glossary
+   ================================================================ */
+function buildGlossary(){
+  const tb=document.querySelector("#glossary_tbl tbody");
+  GLOSSARY.forEach(([t,d])=>{
+    const tr=el("tr");
+    tr.innerHTML=`<td><b>${t}</b></td><td>${d}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ================================================================
+   Tooltip helpers
+   ================================================================ */
+const TIP=document.getElementById("tip");
+function showTip(e,html){TIP.innerHTML=html; TIP.style.opacity=1; moveTip(e);}
+function moveTip(e){
+  const pad=14, w=TIP.offsetWidth, h=TIP.offsetHeight;
+  let x=e.pageX+pad, y=e.pageY+pad;
+  if(x+w>window.innerWidth-10) x=e.pageX-w-pad;
+  if(y+h>window.innerHeight+window.scrollY-10) y=e.pageY-h-pad;
+  TIP.style.left=x+"px"; TIP.style.top=y+"px";
+}
+function hideTip(){TIP.style.opacity=0;}
+
+/* ================================================================
+   TOC scrollspy
+   ================================================================ */
+function initScrollspy(){
+  const links=document.querySelectorAll("#toc a");
+  const map=new Map();
+  links.forEach(a=>{
+    const id=a.getAttribute("href").slice(1);
+    const target=document.getElementById(id);
+    if(target) map.set(target,a);
+  });
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(en=>{
+      const a=map.get(en.target);
+      if(!a) return;
+      if(en.isIntersecting){
+        document.querySelectorAll("#toc a.active").forEach(x=>x.classList.remove("active"));
+        a.classList.add("active");
+      }
+    });
+  },{rootMargin:"-40% 0px -55% 0px",threshold:0});
+  map.forEach((_,t)=>obs.observe(t));
+}
+
+/* ================================================================
+   THEME TOGGLE
+   ================================================================ */
+function applyTheme(mode){
+  const root=document.documentElement;
+  if(mode==="dark") root.classList.add("dark"); else root.classList.remove("dark");
+  localStorage.setItem("mlops-theme", mode);
+  const btn=document.getElementById("theme_toggle");
+  if(btn) btn.textContent = mode==="dark" ? "☀️" : "🌙";
+  redrawAll();
+}
+function redrawAll(){
+  drawVenn(); drawPCGraph(); drawChord(); drawWorkflow();
+  drawSankey(); drawHeatmap();
+  drawRadar(PRINCIPLES.map(p=>+document.getElementById("m_"+p.id).value));
+  updateScoreUI();
+  drawDrift();
+}
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+document.addEventListener("DOMContentLoaded",()=>{
+  /* Theme: default LIGHT, persist user choice */
+  const saved=localStorage.getItem("mlops-theme")||"light";
+  if(saved==="dark") document.documentElement.classList.add("dark");
+  const themeBtn=document.getElementById("theme_toggle");
+  themeBtn.textContent = saved==="dark" ? "☀️" : "🌙";
+  themeBtn.addEventListener("click",()=>{
+    applyTheme(document.documentElement.classList.contains("dark") ? "light" : "dark");
+  });
+  buildPrinciples();
+  buildComponents();
+  buildRoles();
+  drawVenn();
+  drawPCGraph();
+  drawChord();
+  drawWorkflow();
+  drawSankey();
+  drawHeatmap();
+  buildScenarios();
+  buildMaturity();
+  initTS();
+  renderTestRubric();
+  drawDrift();
+  buildGlossary();
+  initScrollspy();
+  updateMaturity();
+
+  /* workflow controls — only attach if the legacy inline player exists.
+     The default flow now embeds figure4.html via iframe (see #workflow section). */
+  const wfPlayBtn = document.getElementById("wf_play");
+  if(wfPlayBtn){
+    wfPlayBtn.addEventListener("click",wfPlay);
+    document.getElementById("wf_pause").addEventListener("click",wfPause);
+    document.getElementById("wf_step").addEventListener("click",wfStep);
+    document.getElementById("wf_back").addEventListener("click",wfBack);
+    document.getElementById("wf_reset").addEventListener("click",wfReset);
+    const speed=document.getElementById("wf_speed");
+    speed.addEventListener("input",()=>{
+      WF.speed = 1700 - +speed.value;
+      if(WF.timer){wfPause(); wfPlay();}
+    });
+    WF.speed = 1700 - +speed.value;
+  }
+  /* Render the embedded Figure 4 at its natural design width (1556px) and CSS-scale it
+     down to fit whatever column width is available. This avoids both scrollbars AND visual
+     squashing/clipping of the diagram. */
+  const ifr = document.getElementById("wf_iframe");
+  const wrap = document.getElementById("wf_frame_wrap");
+  if(ifr && wrap){
+    const NATURAL_W = 1556;
+    const fit = ()=>{
+      try{
+        const innerDoc = ifr.contentDocument || ifr.contentWindow.document;
+        if(!innerDoc || !innerDoc.documentElement) return;
+        const naturalH = Math.max(
+          innerDoc.documentElement.scrollHeight,
+          innerDoc.body ? innerDoc.body.scrollHeight : 0
+        );
+        if(!naturalH) return;
+        ifr.style.width  = NATURAL_W + "px";
+        ifr.style.height = naturalH  + "px";
+        const wrapW = wrap.clientWidth || NATURAL_W;
+        const scale = Math.min(1, wrapW / NATURAL_W);
+        ifr.style.transformOrigin = "top left";
+        ifr.style.transform = `scale(${scale})`;
+        wrap.style.height = Math.ceil(naturalH * scale) + "px";
+      } catch(e){}
+    };
+    ifr.addEventListener("load", ()=>{
+      fit();
+      setTimeout(fit, 80);
+      setTimeout(fit, 280);
+      try{
+        const innerDoc = ifr.contentDocument || ifr.contentWindow.document;
+        if(window.ResizeObserver && innerDoc?.documentElement){
+          new ResizeObserver(fit).observe(innerDoc.documentElement);
+          if(innerDoc.body) new ResizeObserver(fit).observe(innerDoc.body);
+        }
+      } catch(e){}
+    });
+    if(window.ResizeObserver) new ResizeObserver(fit).observe(wrap);
+    window.addEventListener("resize", fit);
+    // late safety in case iframe was already loaded
+    if(ifr.contentDocument && ifr.contentDocument.readyState === "complete"){
+      setTimeout(fit, 50);
+    }
+  }
+  /* Full-bleed view toggle for the embedded figure */
+  const fullBtn = document.getElementById("wf_full");
+  if(fullBtn){
+    fullBtn.addEventListener("click",()=>{
+      const wrap = document.getElementById("wf_frame_wrap");
+      const ifrEl = document.getElementById("wf_iframe");
+      const expanded = wrap.classList.toggle("full-bleed");
+      if(expanded){
+        wrap.style.position = "fixed";
+        wrap.style.inset = "0";
+        wrap.style.zIndex = "9999";
+        wrap.style.height = "100vh";
+        wrap.style.background = "#fff";
+        // re-fit at the new wrap width (full viewport)
+        fullBtn.textContent = "⛶ Exit full-bleed";
+        window.dispatchEvent(new Event("resize"));
+      } else {
+        wrap.style.position = "";
+        wrap.style.inset = "";
+        wrap.style.zIndex = "";
+        wrap.style.height = "";
+        wrap.style.background = "";
+        fullBtn.textContent = "⛶ Full-bleed view";
+        window.dispatchEvent(new Event("resize"));
+      }
+    });
+  }
+
+  /* responsive redraw */
+  let rt;
+  window.addEventListener("resize",()=>{
+    clearTimeout(rt);
+    rt=setTimeout(()=>{
+      drawVenn(); drawPCGraph(); drawChord(); drawWorkflow();
+      drawSankey(); drawHeatmap();
+      drawRadar(PRINCIPLES.map(p=>+document.getElementById("m_"+p.id).value));
+      updateScoreUI();
+      drawDrift();
+    },200);
+  });
+});
+</script>
+</body>
+</html>
