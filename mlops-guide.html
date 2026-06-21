@@ -361,6 +361,105 @@ button.theme:hover{transform:rotate(15deg)}
 .checklist .ck.done::before{background:linear-gradient(135deg,var(--teal),var(--blue));border-color:transparent}
 @media(max-width:780px){.checklist{grid-template-columns:1fr}}
 
+/* ===== Verbatim Companion (section + dialog) ===== */
+.vb-group{margin:0 0 30px}
+.vb-group-title{
+  font-size:13px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--muted);margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line);
+}
+.vb-entry{
+  margin:0 0 16px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;
+  background:var(--panel);box-shadow:var(--shadow);
+}
+.vb-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+.vb-tag{
+  flex:none;display:inline-flex;align-items:center;justify-content:center;
+  min-width:36px;height:36px;padding:0 9px;border-radius:10px;
+  background:linear-gradient(135deg,var(--teal),var(--blue));color:#fff;font-weight:800;font-size:15px;
+}
+.vb-title{margin:0;font-size:16px;font-weight:800;color:var(--text)}
+.vb-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.vb-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
+@media(max-width:820px){.vb-grid{grid-template-columns:1fr}}
+.vb-label{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--teal);margin-bottom:6px}
+.vb-verbatim{
+  background:var(--surface-2);border-left:3px solid var(--teal);border-radius:0 10px 10px 0;
+  padding:12px 16px;font-family:ui-serif,Georgia,"Times New Roman",serif;
+  color:var(--text);font-size:13.5px;line-height:1.62;
+}
+.vb-verbatim .vb-label{font-family:var(--sans)}
+.vb-verbatim p{margin:0 0 10px}
+.vb-verbatim p:last-child{margin-bottom:0}
+.vb-side{display:flex;flex-direction:column;gap:14px}
+.vb-block p{margin:0 0 8px;font-size:13.5px;color:var(--text);line-height:1.55}
+.vb-block ul{margin:4px 0 0;padding-left:18px}
+.vb-block li{font-size:13px;color:var(--muted);margin:3px 0;line-height:1.5}
+.vb-tldr{background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);border-radius:10px;padding:10px 12px}
+:root.dark .vb-tldr{background:rgba(251,191,36,.10);border-color:rgba(251,191,36,.28)}
+.vb-tldr p{margin:0;font-weight:600;color:var(--text)}
+.vb-services li b{color:var(--text)}
+
+/* Pixel-perfect verbatim cuts (cropped straight from the PDF) */
+.vb-verbatim-img{background:transparent;border-left:3px solid var(--teal);padding:10px 12px}
+.vb-cuts{margin:0;display:flex;flex-direction:column;gap:8px}
+.vb-cut{
+  display:block;max-width:100%;height:auto;border-radius:6px;
+  background:#fff;border:1px solid var(--line);
+  box-shadow:0 1px 3px rgba(2,6,23,.12);
+}
+:root.dark .vb-cut{box-shadow:0 2px 10px rgba(0,0,0,.5)}
+.vb-cut-text{margin-top:8px;font-size:12px;color:var(--muted)}
+.vb-cut-text summary{cursor:pointer;color:var(--teal);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+.vb-cut-text p{font-family:ui-serif,Georgia,serif;font-size:13px;color:var(--text);margin:8px 0 0}
+
+/* Citation links + reference chips */
+a.reflink{color:var(--blue);font-weight:600;text-decoration:none}
+a.reflink:hover{text-decoration:underline}
+.vb-refs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.vb-refs-lbl{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-right:2px}
+a.refchip{
+  display:inline-block;font-size:11.5px;font-weight:700;line-height:1;
+  padding:4px 7px;border-radius:7px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--blue);text-decoration:none;
+}
+a.refchip:hover{border-color:var(--blue);background:rgba(37,99,235,.10);text-decoration:none}
+.vb-reflist-wrap{margin-top:22px;border-top:1px solid var(--line);padding-top:14px}
+.vb-reflist-wrap > summary{cursor:pointer;color:var(--text);font-size:14px}
+.vb-reflist-wrap .mini{font-family:var(--mono);color:var(--blue)}
+ol.vb-reflist{margin:12px 0 0;padding-left:28px;columns:2;column-gap:28px}
+@media(max-width:820px){ol.vb-reflist{columns:1}}
+ol.vb-reflist li{font-size:12.5px;color:var(--muted);margin:0 0 8px;break-inside:avoid;line-height:1.45}
+ol.vb-reflist li a{color:var(--text)}
+ol.vb-reflist li a:hover{color:var(--blue)}
+
+/* Dialog (opened from Figure 4 zone clicks via postMessage) */
+.vb-backdrop{
+  position:fixed;inset:0;background:rgba(2,6,23,.62);
+  display:none;align-items:flex-start;justify-content:center;
+  z-index:10000;padding:32px 16px;overflow:auto;backdrop-filter:blur(3px);
+}
+.vb-backdrop.open{display:flex}
+.vb-dialog{
+  background:var(--panel);max-width:1080px;width:100%;border-radius:18px;
+  box-shadow:0 40px 100px rgba(2,6,23,.55);overflow:hidden;border:1px solid var(--line);
+  animation:vb-pop .18s ease;
+}
+@keyframes vb-pop{from{transform:translateY(14px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+.vb-dialog-head{
+  display:flex;align-items:center;gap:12px;padding:16px 22px;
+  background:linear-gradient(135deg,var(--teal),var(--blue));color:#fff;
+}
+.vb-dialog-head h2{margin:0;font-size:17px;font-weight:800;color:#fff}
+.vb-dialog-head .sub{font-size:12px;opacity:.92;font-weight:500;margin-top:2px}
+.vb-close{
+  background:rgba(255,255,255,.18);border:0;color:#fff;width:34px;height:34px;
+  border-radius:9px;cursor:pointer;font-size:18px;line-height:1;flex:none;
+}
+.vb-close:hover{background:rgba(255,255,255,.32)}
+.vb-dialog-body{padding:20px 24px 28px;max-height:80vh;overflow:auto}
+.vb-dialog-body .vb-entry{box-shadow:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:0 0 22px;margin-bottom:24px;background:transparent}
+.vb-dialog-body .vb-entry:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+
 /* Print */
 @media print{
   aside.nav{display:none}
@@ -368,6 +467,7 @@ button.theme:hover{transform:rotate(15deg)}
   body{background:#fff;color:#000}
   section.block,.hero{box-shadow:none;border-color:#ccc;background:#fff}
   .card{background:#fff;border-color:#ddd}
+  .vb-backdrop{display:none !important}
 }
 </style>
 </head>
@@ -395,6 +495,8 @@ button.theme:hover{transform:rotate(15deg)}
       <a href="#roles"><span>7 Roles (Chord)</span><span class="num">06</span></a>
       <div class="grp">Operations</div>
       <a href="#workflow"><span>End-to-End Workflow</span><span class="num">07</span></a>
+      <a href="#verbatim"><span>Verbatim Companion</span><span class="num">★</span></a>
+      <a href="#verbatim-full"><span>Verbatim vs Commentary</span><span class="num">★</span></a>
       <a href="#sankey"><span>Artifact Flow</span><span class="num">08</span></a>
       <a href="#heatmap"><span>Roles × Stages</span><span class="num">09</span></a>
       <div class="grp">Adoption</div>
@@ -502,7 +604,7 @@ button.theme:hover{transform:rotate(15deg)}
     <!-- WORKFLOW -->
     <section class="block" id="workflow">
       <h2><span class="pill">07</span> End-to-End Workflow — Interactive Architecture (Figure 4)</h2>
-      <p class="lead">A pixel-faithful reproduction of <b>Figure 4</b> of Kreuzberger et al. — the full end-to-end MLOps architecture with all four zones (Initiation · Data Engineering · ML Experimentation · ML Production), the feature store (offline/online DBs), the repository, CI/CD, model registry, scheduler &amp; orchestration component, model serving, monitoring, and the feedback loops. Use the toolbar inside the figure to toggle <b>rounded corners</b>, <b>color-coded actors</b>, or to overlay the <b>critical path</b>. Hover any zone (A · B · C · D) to isolate its components.</p>
+      <p class="lead">A pixel-faithful reproduction of <b>Figure 4</b> of Kreuzberger et al. — the full end-to-end MLOps architecture with all four zones (Initiation · Data Engineering · ML Experimentation · ML Production), the feature store (offline/online DBs), the repository, CI/CD, model registry, scheduler &amp; orchestration component, model serving, monitoring, and the feedback loops. Use the toolbar inside the figure to toggle <b>rounded corners</b>, <b>color-coded actors</b>, or to overlay the <b>critical path</b>. Hover any zone (A · B · C · D) to isolate its components — and <b>click any zone to open the Verbatim Companion dialog</b> with the exact paper text, a plain-language explanation, real-world examples, and the services that fit.</p>
       <div class="row" style="margin:6px 0 10px;gap:10px">
         <a class="btn" href="figure4.html" target="_blank" rel="noopener">↗ Open figure in a new tab</a>
         <button class="btn" id="wf_full" type="button">⛶ Full-bleed view</button>
@@ -519,6 +621,24 @@ button.theme:hover{transform:rotate(15deg)}
         <span class="lg"><span class="sw" style="background:#6b7280"></span>Model / Code flow</span>
         <span class="lg"><span class="sw" style="background:repeating-linear-gradient(90deg,#000 0 6px,transparent 6px 10px)"></span>Feedback loop</span>
       </div>
+    </section>
+
+    <!-- VERBATIM COMPANION -->
+    <section class="block" id="verbatim">
+      <h2><span class="pill">★</span> Verbatim Companion — Paper, Paragraph by Paragraph</h2>
+      <p class="lead">The full paper of Kreuzberger, Kühl &amp; Hirschl treated <b>paragraph by paragraph</b>. For each one you get: the <b>exact verbatim text</b> from the paper, a one-line <b>“Pe scurt”</b>, an explanation <b>pe înțelesul tuturor</b>, <b>real-world examples</b>, and the <b>existing services and how they fit</b>. The four workflow zones (A · B · C · D) below are the same ones you can click directly inside the Figure 4 diagram above.</p>
+      <div id="verbatimContainer"></div>
+    </section>
+
+    <!-- VERBATIM vs COMMENTARY (FULL PAPER) -->
+    <section class="block" id="verbatim-full">
+      <h2><span class="pill">★</span> Verbatim vs Commentary — The Whole Paper</h2>
+      <p class="lead">The <b>complete</b> paper of Kreuzberger, Kühl &amp; Hirschl, <b>paragraph by paragraph</b> — Abstract → Introduction → DevOps Foundations → Methodology → Results (Principles · Components · Roles) → Architecture &amp; Workflow → Definition → Open Challenges → Conclusion. Left side is the <b>exact verbatim text</b> (no summary, no short version); right side is the <b>commentary</b>: a one-line <b>“Pe scurt”</b>, an explanation <b>pe înțelesul tuturor</b>, <b>real-world examples</b>, and the <b>services that fit</b>.</p>
+      <div id="verbatimFullContainer"></div>
+      <details class="vb-reflist-wrap" open>
+        <summary><b>📚 Paper references</b> — all 46 citations (click any <span class="mini">[n]</span> above to jump out to the source)</summary>
+        <div id="paperRefList"></div>
+      </details>
     </section>
 
     <!-- SANKEY -->
@@ -2186,6 +2306,83 @@ document.addEventListener("DOMContentLoaded",()=>{
     },200);
   });
 });
+</script>
+
+<!-- Verbatim companion dialog (opened when a zone is clicked inside Figure 4) -->
+<div class="vb-backdrop" id="vb_backdrop" role="dialog" aria-modal="true" aria-labelledby="vb_dialog_title">
+  <div class="vb-dialog">
+    <div class="vb-dialog-head">
+      <div style="flex:1">
+        <h2 id="vb_dialog_title">MLOps — Verbatim</h2>
+        <div class="sub" id="vb_dialog_sub"></div>
+      </div>
+      <button class="vb-close" id="vb_close" title="Close (Esc)" aria-label="Close">✕</button>
+    </div>
+    <div class="vb-dialog-body" id="vb_dialog_body"></div>
+  </div>
+</div>
+
+<script src="mlops-refs.js"></script>
+<script src="mlops-verbatim.js"></script>
+<script src="paper-crops/manifest.js"></script>
+<script src="mlops-paper-full.js"></script>
+<script>
+/* Render the Verbatim Companion + the full Verbatim-vs-Commentary section,
+   and wire the Figure-4 zone dialog. */
+(function(){
+  function init(){
+    const doc = window.MLOPS_DOC;
+    if(!doc) return;
+
+    const container = document.getElementById("verbatimContainer");
+    if(container) doc.renderAll(container);
+
+    if(window.MLOPS_PAPER){
+      const full = document.getElementById("verbatimFullContainer");
+      if(full) window.MLOPS_PAPER.renderFull(full);
+    }
+    if(window.MLOPS_REFS){
+      const rl = document.getElementById("paperRefList");
+      if(rl) rl.innerHTML = window.MLOPS_REFS.renderList();
+    }
+
+    const ZONE_TITLES = {
+      A: "Zone A · MLOps Project Initiation",
+      B: "Zone B · Data Engineering",
+      C: "Zone C · Experimentation",
+      D: "Zone D · ML Production",
+    };
+    const bd = document.getElementById("vb_backdrop");
+    function openZone(zoneKey){
+      const entries = doc.byZone(zoneKey);
+      if(!entries.length) return;
+      document.getElementById("vb_dialog_title").textContent = ZONE_TITLES[zoneKey] || "MLOps — Verbatim";
+      document.getElementById("vb_dialog_sub").textContent =
+        "Kreuzberger, Kühl & Hirschl — Figure 4 · click outside or press Esc to close";
+      document.getElementById("vb_dialog_body").innerHTML = entries.map(doc.renderEntry).join("");
+      bd.classList.add("open");
+      document.getElementById("vb_dialog_body").scrollTop = 0;
+      document.body.style.overflow = "hidden";
+    }
+    function closeZone(){
+      bd.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    document.getElementById("vb_close").addEventListener("click", closeZone);
+    bd.addEventListener("click", e=>{ if(e.target === bd) closeZone(); });
+    document.addEventListener("keydown", e=>{ if(e.key === "Escape") closeZone(); });
+
+    // The Figure 4 iframe posts a message when a zone is clicked.
+    window.addEventListener("message", e=>{
+      const d = e.data;
+      if(d && d.type === "mlops-open-zone" && d.zone) openZone(d.zone);
+    });
+  }
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init);
+  } else { init(); }
+})();
 </script>
 </body>
 </html>

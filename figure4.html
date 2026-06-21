@@ -73,6 +73,74 @@
   .zone-lane-label{font-size:12px;fill:#9ca3af;font-style:italic;letter-spacing:.4px}
   .small{font-size:12px;fill:#000}
   .it{font-style:italic}
+
+  /* Zones are now clickable — show it */
+  g.zone:not(.zone-legend){cursor:pointer}
+  g.zone:not(.zone-legend):hover{filter:drop-shadow(0 0 8px rgba(13,148,136,.45))}
+
+  /* ===== Dialog (verbatim companion) ===== */
+  .vb-backdrop{
+    position:fixed;inset:0;background:rgba(15,23,42,.55);
+    display:none;align-items:flex-start;justify-content:center;
+    z-index:9999;padding:32px 16px;overflow:auto;
+    backdrop-filter:blur(2px);
+  }
+  .vb-backdrop.open{display:flex}
+  .vb-dialog{
+    background:#fff;max-width:1100px;width:100%;border-radius:16px;
+    box-shadow:0 30px 80px rgba(15,23,42,.4);overflow:hidden;
+    animation:vb-pop .18s ease;
+  }
+  @keyframes vb-pop{from{transform:translateY(12px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+  .vb-dialog-head{
+    display:flex;align-items:center;gap:12px;padding:16px 20px;
+    background:linear-gradient(135deg,#0d9488,#2563eb);color:#fff;
+    position:sticky;top:0;
+  }
+  .vb-dialog-head h2{margin:0;font-size:16px;font-weight:800;flex:1}
+  .vb-dialog-head .sub{font-size:12px;opacity:.9;font-weight:500}
+  .vb-close{
+    background:rgba(255,255,255,.18);border:0;color:#fff;width:32px;height:32px;
+    border-radius:8px;cursor:pointer;font-size:18px;line-height:1;flex:none;
+  }
+  .vb-close:hover{background:rgba(255,255,255,.32)}
+  .vb-dialog-body{padding:18px 22px 26px;max-height:78vh;overflow:auto}
+
+  /* ===== Shared entry styles (also used by the guide) ===== */
+  .vb-entry{margin:0 0 26px;padding:0 0 22px;border-bottom:1px solid #e5e7eb}
+  .vb-entry:last-child{border-bottom:0;margin-bottom:0}
+  .vb-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+  .vb-tag{
+    flex:none;display:inline-flex;align-items:center;justify-content:center;
+    min-width:34px;height:34px;padding:0 8px;border-radius:9px;
+    background:#0f172a;color:#fff;font-weight:800;font-size:14px;
+  }
+  .vb-title{margin:0;font-size:16px;font-weight:800;color:#0f172a}
+  .vb-meta{font-size:12px;color:#64748b;margin-top:2px}
+  .vb-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
+  @media(max-width:760px){.vb-grid{grid-template-columns:1fr}}
+  .vb-label{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#0d9488;margin-bottom:6px}
+  .vb-verbatim{
+    background:#f8fafc;border-left:3px solid #0d9488;border-radius:0 10px 10px 0;
+    padding:12px 16px;font-family:ui-serif,Georgia,"Times New Roman",serif;
+    color:#1e293b;font-size:13.5px;line-height:1.6;
+  }
+  .vb-verbatim .vb-label{font-family:var(--sans,system-ui,sans-serif)}
+  .vb-verbatim p{margin:0 0 10px}
+  .vb-verbatim p:last-child{margin-bottom:0}
+  .vb-side{display:flex;flex-direction:column;gap:14px}
+  .vb-block p{margin:0 0 8px;font-size:13.5px;color:#0f172a;line-height:1.55}
+  .vb-block ul{margin:4px 0 0;padding-left:18px}
+  .vb-block li{font-size:13px;color:#334155;margin:3px 0;line-height:1.5}
+  .vb-tldr{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px}
+  .vb-tldr p{margin:0;font-weight:600}
+  .vb-services li b{color:#0f172a}
+  a.reflink{color:#2563eb;font-weight:600;text-decoration:none}
+  a.reflink:hover{text-decoration:underline}
+  .vb-refs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px dashed #e5e7eb}
+  .vb-refs-lbl{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#64748b;margin-right:2px}
+  a.refchip{display:inline-block;font-size:11.5px;font-weight:700;line-height:1;padding:4px 7px;border-radius:7px;border:1px solid #e5e7eb;background:#f8fafc;color:#2563eb;text-decoration:none}
+  a.refchip:hover{border-color:#2563eb;background:rgba(37,99,235,.10)}
 </style>
 </head>
 <body>
@@ -96,7 +164,7 @@
     <button id="btn_crit"  title="Overlay the happy path">★ Critical: <b id="lbl_crit">off</b></button>
     <button id="btn_zones" style="display:none">Toggle zones</button>
   </div>
-  <div id="wf_caption" class="anim-caption"><b>Step 0</b> · Press <b>▶ Play</b> to walk through the 28 canonical steps of the MLOps end-to-end workflow.</div>
+  <div id="wf_caption" class="anim-caption"><b>Step 0</b> · Press <b>▶ Play</b> to walk through the 28 canonical steps — or <b>click any zone (A · B · C · D)</b> to open the verbatim companion with paper text, plain-language explanation, real-world examples &amp; tooling.</div>
   <div class="canvas">
     <svg id="fig" viewBox="0 0 1556 1320" preserveAspectRatio="xMidYMid meet">
       <!-- Definitions -->
@@ -1198,6 +1266,86 @@ speedSlider.addEventListener("input", ()=>{
   if(WF.timer){ wfPause(); wfPlay(); }
 });
 WF.speed = 1700 - +speedSlider.value;
+
+/* ====================================================================
+   ZONE CLICK → VERBATIM COMPANION DIALOG
+   Uses the shared data in mlops-verbatim.js (window.MLOPS_DOC).
+   ==================================================================== */
+const ZONE_TITLES = {
+  A: "Zone A · MLOps Project Initiation",
+  B: "Zone B · Data Engineering",
+  C: "Zone C · Experimentation",
+  D: "Zone D · ML Production",
+};
+function openZoneDialog(zoneKey){
+  const doc = window.MLOPS_DOC;
+  if(!doc) return;
+  const entries = doc.byZone(zoneKey);
+  if(!entries.length) return;
+  document.getElementById("vb_dialog_title").textContent = ZONE_TITLES[zoneKey] || "MLOps — Verbatim";
+  document.getElementById("vb_dialog_sub").textContent =
+    "Kreuzberger, Kühl & Hirschl — Figure 4 · click outside or press Esc to close";
+  document.getElementById("vb_dialog_body").innerHTML = entries.map(doc.renderEntry).join("");
+  const bd = document.getElementById("vb_backdrop");
+  bd.classList.add("open");
+  bd.scrollTop = 0;
+  document.getElementById("vb_dialog_body").scrollTop = 0;
+}
+function closeZoneDialog(){
+  document.getElementById("vb_backdrop").classList.remove("open");
+}
+function attachZoneClicks(){
+  document.querySelectorAll("g.zone").forEach(g=>{
+    const z = g.getAttribute("data-zone");
+    if(z === "legend") return;
+    g.style.cursor = "pointer";
+    g.addEventListener("click", (e)=>{
+      // When embedded in the guide the iframe is CSS-scaled, so a fixed dialog
+      // inside it would be clipped. Ask the parent page to show it full-size.
+      if(window.parent && window.parent !== window){
+        window.parent.postMessage({ type: "mlops-open-zone", zone: z }, "*");
+      } else {
+        openZoneDialog(z);
+      }
+    });
+  });
+}
+// Re-attach after every render() (render wipes the DOM).
+const _origRender = render;
+render = function(){ _origRender(); attachZoneClicks(); };
+attachZoneClicks(); // for the initial render() that already ran
+
+/* The dialog markup lives below this script, so wire it once the DOM is ready. */
+function wireDialog(){
+  const close = document.getElementById("vb_close");
+  const bd = document.getElementById("vb_backdrop");
+  if(!close || !bd) return;
+  close.addEventListener("click", closeZoneDialog);
+  bd.addEventListener("click", (e)=>{ if(e.target.id === "vb_backdrop") closeZoneDialog(); });
+  document.addEventListener("keydown", e=>{ if(e.key === "Escape") closeZoneDialog(); });
+}
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", wireDialog);
+} else {
+  wireDialog();
+}
 </script>
+
+<!-- Verbatim companion dialog -->
+<div class="vb-backdrop" id="vb_backdrop" role="dialog" aria-modal="true" aria-labelledby="vb_dialog_title">
+  <div class="vb-dialog">
+    <div class="vb-dialog-head">
+      <div style="flex:1">
+        <h2 id="vb_dialog_title">MLOps — Verbatim</h2>
+        <div class="sub" id="vb_dialog_sub"></div>
+      </div>
+      <button class="vb-close" id="vb_close" title="Close (Esc)" aria-label="Close">✕</button>
+    </div>
+    <div class="vb-dialog-body" id="vb_dialog_body"></div>
+  </div>
+</div>
+
+<script src="mlops-refs.js"></script>
+<script src="mlops-verbatim.js"></script>
 </body>
 </html>
